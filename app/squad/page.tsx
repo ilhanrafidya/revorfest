@@ -4,13 +4,17 @@ import { Reveal } from "@/components/motion-primitives";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { avatarUrl, listPlayers } from "@/lib/players";
 import { currentPlayer } from "@/lib/session";
+import { allAwards, SEASON_AWARD_LABEL } from "@/lib/awards";
+import { AwardIcon } from "@/components/player-card";
+
+const SEASON_ICON = { pots: "crown", boot: "boot", assist: "assist" } as const;
 
 export const metadata: Metadata = { title: "Squad" };
 
 const ROLE_LABEL = { admin: "Admin", captain: "Captain", player: null } as const;
 
 export default async function SquadPage() {
-  const [players, me] = await Promise.all([listPlayers(), currentPlayer()]);
+  const [players, me, awards] = await Promise.all([listPlayers(), currentPlayer(), allAwards()]);
 
   return (
     <section className="mx-auto max-w-6xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
@@ -39,7 +43,9 @@ export default async function SquadPage() {
         <p className="mt-16 text-center text-mute">No one has signed up yet.</p>
       ) : (
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:mt-14 md:gap-4 lg:grid-cols-4">
-          {players.map((p, i) => (
+          {players.map((p, i) => {
+            const a = awards.get(p.id);
+            return (
             <Reveal key={p.id} delay={Math.min(i * 0.04, 0.4)}>
               <Link
                 href={`/squad/${p.slug}`}
@@ -54,7 +60,24 @@ export default async function SquadPage() {
                   {p.jersey_number}
                 </span>
                 <div className="relative flex h-full flex-col gap-4">
-                  <PlayerAvatar name={p.display_name} src={avatarUrl(p)} className="size-16 text-lg md:size-20" />
+                  <div className="flex items-start justify-between gap-2">
+                    <PlayerAvatar name={p.display_name} src={avatarUrl(p)} className="size-16 text-lg md:size-20" />
+                    {a && a.season.length > 0 && (
+                      <div className="flex flex-col items-end gap-1.5">
+                        {a.season.slice(0, 3).map((s, k) => (
+                          <span
+                            key={k}
+                            title={`${SEASON_AWARD_LABEL[s.kind]} · ${s.season}`}
+                            className={`grid size-9 place-items-center rounded-full md:size-10 ${
+                              s.kind === "pots" ? "bg-gold text-[#2b1d03] shadow-[0_0_24px_rgba(221,177,104,0.45)]" : "bg-gold/15 text-gold ring-1 ring-gold/40"
+                            }`}
+                          >
+                            <AwardIcon kind={SEASON_ICON[s.kind]} className="size-5" />
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="mt-auto">
                     <p className="flex items-baseline gap-2">
                       <span className="text-sm font-semibold tabular-nums text-accent">#{p.jersey_number}</span>
@@ -68,11 +91,28 @@ export default async function SquadPage() {
                     <p className="mt-1 truncate text-xs text-mute">
                       {[p.primary_position, ...p.secondary_positions].join(" · ")}
                     </p>
+                    {a && (a.potw > 0 || a.weak > 0) && (
+                      <p className="mt-2 flex flex-wrap gap-1">
+                        {a.potw > 0 && (
+                          <span title="Player of the Week" className="flex items-center gap-0.5 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">
+                            <AwardIcon kind="trophy" className="size-3" />
+                            {a.potw}
+                          </span>
+                        )}
+                        {a.weak > 0 && (
+                          <span title="Player of the Weak" className="flex items-center gap-0.5 rounded-full bg-depleted/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#FF6B61]">
+                            <AwardIcon kind="sad" className="size-3" />
+                            {a.weak}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                 </div>
               </Link>
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

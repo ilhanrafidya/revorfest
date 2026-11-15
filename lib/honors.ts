@@ -75,9 +75,13 @@ export function potwScore(l: Omit<WeeklyLine, "score" | "name" | "slug" | "avata
   );
 }
 
-export async function weeklyTable(start: Date): Promise<WeeklyLine[]> {
+export function weeklyTable(start: Date): Promise<WeeklyLine[]> {
+  return rangeTable(start, new Date(start.getTime() + 7 * 86400000));
+}
+
+/** Per-player aggregates for any window (a week, an EA season…), best POTW score first. */
+export async function rangeTable(start: Date, end: Date): Promise<WeeklyLine[]> {
   await ensureSchema();
-  const end = new Date(start.getTime() + 7 * 86400000);
   const rows = (await db()`
     SELECT mp.gamertag,
            count(*)::int AS matches,

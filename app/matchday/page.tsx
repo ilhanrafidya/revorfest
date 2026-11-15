@@ -23,6 +23,12 @@ export default async function MatchdayPage() {
           <br />
           <span className="text-gradient">Lock in.</span>
         </h1>
+        <Link href="/matchday/history" className="glass hairline mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
+          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2" />
+          </svg>
+          History
+        </Link>
       </Reveal>
 
       {matchday && data ? (

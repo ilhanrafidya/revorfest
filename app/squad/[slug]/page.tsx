@@ -7,6 +7,8 @@ import { avatarUrl, getPlayerBySlug } from "@/lib/players";
 import { currentPlayer } from "@/lib/session";
 import { memberStats, recentRatings } from "@/lib/stats";
 import { ResultPill } from "@/components/stat-bits";
+import { PlayerCardView } from "@/components/player-card";
+import { cardFor } from "@/lib/card";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getPlayerBySlug((await params).slug);
@@ -23,7 +25,7 @@ export default async function PlayerPage({
   const [{ slug }, { welcome }] = await Promise.all([params, searchParams]);
   const [p, me] = await Promise.all([getPlayerBySlug(slug), currentPlayer()]);
   if (!p) notFound();
-  const [ea, recent] = await Promise.all([memberStats(p.ea_gamertag), recentRatings(p.ea_gamertag)]);
+  const [ea, recent, card] = await Promise.all([memberStats(p.ea_gamertag), recentRatings(p.ea_gamertag), cardFor(p)]);
   const isMe = me?.id === p.id;
   const joined = new Date(p.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
@@ -67,6 +69,10 @@ export default async function PlayerPage({
         {p.role !== "player" && (
           <span className="rounded-full bg-gold/15 px-4 py-2 text-sm font-semibold capitalize text-gold">{p.role}</span>
         )}
+      </Reveal>
+
+      <Reveal delay={0.15} className="relative mt-12 flex justify-center md:justify-start">
+        <PlayerCardView c={card} />
       </Reveal>
 
       <div className="relative mt-12 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">

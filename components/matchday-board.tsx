@@ -15,6 +15,7 @@ import { FORMATIONS, fitsSlot, formationSlots } from "@/lib/formations";
 import { KITS, KIT_ORDER, type Kit } from "@/lib/kits";
 import { EASE, SPRING_SNAPPY } from "@/lib/motion";
 import { PlayerAvatar } from "./player-avatar";
+import { CardSheet } from "./player-card";
 import { ShareButton } from "./share-button";
 import { Reveal } from "./motion-primitives";
 import { Button, ErrorText, Input } from "./ui";
@@ -80,6 +81,7 @@ export function MatchdayBoard({
 
   const when = useMemo(() => whenParts(matchday.scheduled_at), [matchday.scheduled_at]);
   const [focus, setFocus] = useState<number | null>(null);
+  const [cardSlug, setCardSlug] = useState<string | null>(null);
   const byId = useMemo(() => new Map(state.roster.map((p) => [p.id, p])), [state.roster]);
   const slots = formationSlots(state.formation);
   const me = meId ? byId.get(meId) : undefined;
@@ -211,7 +213,7 @@ export function MatchdayBoard({
                 </button>
               )}
               <ShareButton
-                url={`/share/lineup?id=${matchday.id}`}
+                url={`/share/lineup?id=${matchday.id}&v=${encodeURIComponent(`${state.formation}.${state.kit}.${state.lineup.map((x) => x?.slice(0, 4) ?? "-").join("")}`)}`}
                 filename="revorfest-lineup.png"
                 title="Revorfest lineup"
                 className="bg-accent/15 text-accent"
@@ -282,18 +284,22 @@ export function MatchdayBoard({
                             Remove
                           </m.button>
                         )}
-                        <m.a
-                          href={`/squad/${p.slug}`}
+                        <m.button
+                          type="button"
                           initial={{ opacity: 0, x: -8, scale: 0.8 }}
                           animate={{ opacity: 1, x: 0, scale: 1 }}
                           exit={{ opacity: 0, x: -8, scale: 0.8 }}
                           transition={SPRING_SNAPPY}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFocus(null);
+                            setCardSlug(p.slug);
+                          }}
                           className={`absolute ${viewCls} flex items-center gap-1 whitespace-nowrap rounded-full bg-chalk px-3 py-2 text-[11px] font-semibold text-black shadow-[0_8px_20px_rgba(0,0,0,0.45)]`}
                         >
                           <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="5" y="3" width="14" height="18" rx="2.5" /><circle cx="12" cy="10" r="2.5" /><path d="M8.5 16.5c.8-1.6 2-2.4 3.5-2.4s2.7.8 3.5 2.4" /></svg>
                           View card
-                        </m.a>
+                        </m.button>
                       </>
                     )}
                   </AnimatePresence>
@@ -407,6 +413,8 @@ export function MatchdayBoard({
           {manage && <FullTime onConfirm={() => run({ type: "clear" }, () => closeMatchday(matchday.id))} />}
         </Reveal>
       </div>
+
+      <CardSheet slug={cardSlug} onClose={() => setCardSlug(null)} />
 
       {/* Player picker sheet */}
       <AnimatePresence>

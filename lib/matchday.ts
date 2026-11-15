@@ -119,3 +119,38 @@ export async function latestMatchdayAlert(): Promise<MatchdayAlert | null> {
     return null;
   }
 }
+
+export type PastMatchday = {
+  id: string;
+  scheduled_at: string;
+  formation: string;
+  kit: Kit;
+  note: string | null;
+  by: string | null;
+  ready: number;
+  lineup: { slot: number; name: string; number: number }[];
+};
+
+/** Finished matchdays, newest first, with their saved lineup. */
+export async function pastMatchdays(limit = 30): Promise<PastMatchday[]> {
+  await ensureSchema();
+  const sql = db();
+  const rows = (await sql`
+    SELECT m.id, m.scheduled_at, m.formation, m.kit, m.note, c.display_name AS by,
+           (SELECT count(*)::int FROM matchday_attendance a WHERE a.matchday_id = m.id AND a.status = 'ready') AS ready
+    FROM matchdays m LEFT JOIN players c ON c.id = m.created_by
+    WHERE m.status = 'done'
+    ORDER BY m.scheduled_at DESC LIMIT ${limit}`) as Omit<PastMatchday, "lineup">[];
+  if (!rows.length) return [];
+  const ids = rows.map((r) => r.id);
+  const slots = (await sql`
+    SELECT l.matchday_id, l.slot, p.display_name AS name, p.jersey_number AS number
+    FROM lineup_slots l JOIN players p ON p.id = l.player_id
+    WHERE l.matchday_id = ANY(${ids}::uuid[])
+    ORDER BY l.slot`) as { matchday_id: string; slot: number; name: string; number: number }[];
+  return rows.map((r) => ({
+    ...r,
+    scheduled_at: new Date(r.scheduled_at).toISOString(),
+    lineup: slots.filter((s) => s.matchday_id === r.id).map(({ slot, name, number }) => ({ slot, name, number })),
+  }));
+}

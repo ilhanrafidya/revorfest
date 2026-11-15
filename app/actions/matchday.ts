@@ -16,6 +16,7 @@ async function manager() {
 
 function done() {
   revalidatePath("/matchday");
+  revalidatePath("/matchday/history");
   revalidatePath("/");
   return { ok: true } as const;
 }
