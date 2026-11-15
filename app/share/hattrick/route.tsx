@@ -1,6 +1,6 @@
 import { hattricks } from "@/lib/awards";
 import { db } from "@/lib/db";
-import { Avatar, C, Frame, asset, avatarData, story } from "@/lib/share";
+import { C, Hero, Frame, asset, avatarData, story } from "@/lib/share";
 
 export async function GET(req: Request) {
   const u = new URL(req.url);
@@ -22,11 +22,7 @@ export async function GET(req: Request) {
   return story(
     <Frame crest={crest} eyebrow={title} accent={C.volt} glow="rgba(215,255,58,0.28)">
       <div style={{ display: "flex", marginTop: 14, fontSize: 30, color: C.mute }}>{when}</div>
-      <div style={{ display: "flex", marginTop: 90 }}>
-        <Avatar src={av} name={name} size={440} ring={C.volt} />
-      </div>
-      <div style={{ display: "flex", marginTop: 50, fontSize: 130, fontWeight: 800, letterSpacing: -5, lineHeight: 1 }}>{name}</div>
-      {p && <div style={{ display: "flex", marginTop: 14, fontSize: 32, color: C.mute }}>{`#${p.jersey_number}`}</div>}
+      <Hero avatar={av} name={name} gamertag={h.gamertag} number={p?.jersey_number ?? null} size={440} ring={C.volt} tint="rgba(215,255,58,0.1)" />
       <div style={{ display: "flex", alignItems: "flex-end", marginTop: 60 }}>
         <div style={{ display: "flex", fontSize: 240, fontWeight: 800, letterSpacing: -10, lineHeight: 0.9, color: C.volt }}>{String(h.goals)}</div>
         <div style={{ display: "flex", fontSize: 44, fontWeight: 800, letterSpacing: 6, marginLeft: 20, marginBottom: 22 }}>{"GOALS"}</div>

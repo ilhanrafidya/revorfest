@@ -48,6 +48,6 @@ export const PlayIcon = (p: P) => (
 
 export const PlayFilled = (p: P) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
-    <path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z" />
+    <path d="M7 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 7 5.5z" />
   </svg>
 );

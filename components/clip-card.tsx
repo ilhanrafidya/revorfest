@@ -52,7 +52,7 @@ export function ClipPlayer({ provider, embedId, url, tone = "gotw" }: { provider
             />
           )}
           <span className="glass hairline relative grid size-16 place-items-center rounded-full transition group-hover:scale-110 group-active:scale-95">
-            <PlayFilled className="ml-1 size-7" />
+            <PlayFilled className="size-7" />
           </span>
           <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold">{PROVIDER_LABEL[provider] ?? provider}</span>
         </button>

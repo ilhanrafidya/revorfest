@@ -362,7 +362,7 @@ export async function Overview() {
                 }}
               />
               <div className="glass hairline absolute right-5 top-5 grid size-12 place-items-center rounded-full">
-                <PlayFilled className="ml-0.5 size-5" />
+                <PlayFilled className="size-5" />
               </div>
               <div className="relative p-5 md:p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent transition-colors duration-700">

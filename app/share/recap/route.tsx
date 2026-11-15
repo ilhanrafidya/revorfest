@@ -8,7 +8,10 @@ export async function GET(req: Request) {
   if (!md) return new Response("Matchday not found", { status: 404 });
   const r = await matchdayRecap(md);
   if (!r.matches.length) return new Response("No matches in this session", { status: 404 });
-  const [crest, mvpAvatar] = await Promise.all([asset(req, "/brand/crest.png"), avatarData(r.awards.mvp?.playerId ?? null)]);
+  const ids = [...new Set(Object.values(r.awards).map((l) => l?.playerId).filter((x): x is string => !!x))];
+  const [crest, ...avs] = await Promise.all([asset(req, "/brand/crest.png"), ...ids.map((id) => avatarData(id))]);
+  const face = new Map(ids.map((id, i) => [id, avs[i]]));
+  const mvpAvatar = r.awards.mvp?.playerId ? (face.get(r.awards.mvp.playerId) ?? null) : null;
 
   const when = new Date(md.scheduled_at).toLocaleString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Jakarta" });
   const title = (md.note?.trim() || "Matchday").slice(0, 34);
@@ -51,13 +54,25 @@ export async function GET(req: Request) {
       )}
 
       <div style={{ display: "flex", flexWrap: "wrap", width: 920, marginTop: 30, justifyContent: "space-between" }}>
-        {cells.map((c) => (
-          <div key={c.k} style={{ display: "flex", flexDirection: "column", width: 445, marginBottom: 30, borderRadius: 32, background: "rgba(255,255,255,0.05)", padding: "26px 30px" }}>
-            <div style={{ display: "flex", fontSize: 22, letterSpacing: 4, color: C.mute }}>{c.k}</div>
-            <div style={{ display: "flex", marginTop: 10, fontSize: 46, fontWeight: 800, color: c.v ? C.chalk : C.mute }}>{c.v ?? "—"}</div>
-            <div style={{ display: "flex", marginTop: 4, fontSize: 28, color: C.mute }}>{c.l ? `${c.l.name.slice(0, 16)} · ${mp(c.l)}` : c.k === "MATCHES" ? "this session" : "nobody"}</div>
-          </div>
-        ))}
+        {cells.map((c) => {
+          const av = c.l?.playerId ? (face.get(c.l.playerId) ?? null) : null;
+          return (
+            <div key={c.k} style={{ display: "flex", alignItems: "center", width: 445, marginBottom: 26, borderRadius: 32, background: "rgba(255,255,255,0.05)", padding: "24px 26px" }}>
+              {c.l ? (
+                <div style={{ display: "flex", width: 92, height: 92, borderRadius: 92, overflow: "hidden", alignItems: "center", justifyContent: "center", background: "#1C1C1F", border: "3px solid rgba(255,255,255,0.14)", fontSize: 32, fontWeight: 700, flexShrink: 0 }}>
+                  {av ? <img src={av} width={92} height={92} alt="" style={{ objectFit: "cover" }} /> : c.l.name.slice(0, 2).toUpperCase()}
+                </div>
+              ) : (
+                <div style={{ display: "flex", width: 92, height: 92, borderRadius: 92, alignItems: "center", justifyContent: "center", background: "rgba(215,255,58,0.12)", color: C.volt, fontSize: 30, fontWeight: 800, letterSpacing: 1, flexShrink: 0 }}>{"FT"}</div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", marginLeft: 22, flex: 1 }}>
+                <div style={{ display: "flex", fontSize: 20, letterSpacing: 4, color: C.mute }}>{c.k}</div>
+                <div style={{ display: "flex", marginTop: 4, fontSize: 44, fontWeight: 800, lineHeight: 1.05, color: c.v ? C.chalk : C.mute }}>{c.v ?? "—"}</div>
+                <div style={{ display: "flex", marginTop: 4, fontSize: 24, color: C.mute }}>{c.l ? `${c.l.name.slice(0, 12)} · ${mp(c.l)}` : c.k === "MATCHES" ? "this session" : "nobody"}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </Frame>,
   );

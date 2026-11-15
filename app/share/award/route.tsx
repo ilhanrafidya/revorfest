@@ -1,7 +1,7 @@
 import { seasonWinners } from "@/lib/awards";
 import { rangeTable } from "@/lib/honors";
 import { seasonByNumber } from "@/lib/seasons";
-import { Avatar, C, Frame, Stat, asset, avatarData, story } from "@/lib/share";
+import { C, Hero, Frame, Stat, asset, avatarData, story } from "@/lib/share";
 
 const META = {
   pots: { eyebrow: "PLAYER OF THE SEASON", glow: "rgba(221,177,104,0.42)" },
@@ -28,11 +28,7 @@ export async function GET(req: Request) {
   return story(
     <Frame crest={crest} eyebrow={META[kind].eyebrow} accent={C.gold} glow={META[kind].glow}>
       <div style={{ display: "flex", marginTop: 14, fontSize: 30, color: C.mute }}>{`EA FC 27 · ${season.name}`}</div>
-      <div style={{ display: "flex", marginTop: 90 }}>
-        <Avatar src={av} name={l.name} size={460} ring={C.gold} />
-      </div>
-      <div style={{ display: "flex", marginTop: 50, fontSize: 130, fontWeight: 800, letterSpacing: -5, lineHeight: 1, color: "#F7E2B0" }}>{l.name}</div>
-      <div style={{ display: "flex", marginTop: 14, fontSize: 32, color: C.mute }}>{l.number ? `#${l.number}` : l.gamertag}</div>
+      <Hero avatar={av} name={l.name} gamertag={l.gamertag} number={l.number} size={460} ring={C.gold} nameColor="#F7E2B0" tint="rgba(221,177,104,0.13)" />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 60 }}>
         <div style={{ display: "flex", fontSize: 200, fontWeight: 800, letterSpacing: -8, lineHeight: 1, color: C.goldHi }}>{hero.v}</div>
         <div style={{ display: "flex", fontSize: 30, letterSpacing: 8, color: C.gold, fontWeight: 700 }}>{hero.k}</div>

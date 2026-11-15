@@ -117,6 +117,50 @@ export function Avatar({ src, name, size, ring }: { src: string | null; name: st
   );
 }
 
+/**
+ * Avatar + name + gamertag, with the shirt number huge and faint behind them (painted first, so it
+ * sits under the avatar and peeks out around the name).
+ */
+export function Hero({
+  avatar,
+  name,
+  gamertag,
+  number,
+  size,
+  ring,
+  nameColor = C.chalk,
+  tint = "rgba(255,255,255,0.07)",
+  nameSize = 130,
+  marginTop = 90,
+}: {
+  avatar: string | null;
+  name: string;
+  gamertag: string | null;
+  number: number | null;
+  size: number;
+  ring: string;
+  nameColor?: string;
+  tint?: string;
+  nameSize?: number;
+  marginTop?: number;
+}) {
+  const fit = name.length > 10 ? Math.round(nameSize * (10 / name.length)) : nameSize;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", marginTop, width: "100%" }}>
+      {number != null ? (
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: -70, display: "flex", justifyContent: "center", fontSize: 460, fontWeight: 900, letterSpacing: -24, lineHeight: 1, color: tint }}>
+          {String(number)}
+        </div>
+      ) : null}
+      <Avatar src={avatar} name={name} size={size} ring={ring} />
+      <div style={{ display: "flex", marginTop: 50, fontSize: fit, fontWeight: 800, letterSpacing: -5, lineHeight: 1, color: nameColor }}>{name}</div>
+      {gamertag && gamertag.toLowerCase() !== name.toLowerCase() ? (
+        <div style={{ display: "flex", marginTop: 16, fontSize: 34, color: C.mute, letterSpacing: 1 }}>{`@${gamertag}`}</div>
+      ) : null}
+    </div>
+  );
+}
+
 export function Stat({ label, value, width = 230, color = C.chalk }: { label: string; value: string; width?: number; color?: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width }}>

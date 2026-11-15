@@ -9,69 +9,111 @@ import { currentPlayer } from "@/lib/session";
 import { DeleteMatchday } from "@/components/delete-matchday";
 import { matchdayRecap, type Recap } from "@/lib/recap";
 
+function Face({ src, name, size = 32, gold = false }: { src: string | null; name: string; size?: number; gold?: boolean }) {
+  return (
+    <span
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-white/[0.08] text-[10px] font-bold ${gold ? "ring-2 ring-[#DDB168]" : "ring-1 ring-white/10"}`}
+      style={{ width: size, height: size }}
+    >
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="size-full object-cover" />
+      ) : (
+        name.slice(0, 2).toUpperCase()
+      )}
+    </span>
+  );
+}
+
 function RecapBlock({ r }: { r: Recap }) {
   if (!r.matches.length)
-    return <p className="mt-4 border-t border-white/[0.06] pt-4 text-xs text-mute">No synced matches in this session window yet.</p>;
+    return <p className="mt-5 rounded-2xl bg-white/[0.03] px-4 py-3 text-xs text-mute">No synced matches in this session window yet.</p>;
   const a = r.awards;
-  const chips = [
-    a.mvp && { k: "MVP", v: a.mvp.name, s: a.mvp.avgRating.toFixed(1), mp: a.mvp.matches, gold: true },
-    a.rating && { k: "Best rating", v: a.rating.name, s: a.rating.avgRating.toFixed(1), mp: a.rating.matches },
-    a.passing && a.passing.passPct != null && { k: "Best passing", v: a.passing.name, s: `${Math.round(a.passing.passPct)}%`, mp: a.passing.matches },
-    a.scorer && { k: "Top scorer", v: a.scorer.name, s: `${a.scorer.goals} G`, mp: a.scorer.matches },
-    a.assister && { k: "Top assist", v: a.assister.name, s: `${a.assister.assists} A`, mp: a.assister.matches },
-    a.motm && { k: "Most MOTM", v: a.motm.name, s: `${a.motm.motm}×`, mp: a.motm.matches },
-  ].filter(Boolean) as { k: string; v: string; s: string; mp: number; gold?: boolean }[];
+  const rows = [
+    a.rating && { k: "Best rating", l: a.rating, v: a.rating.avgRating.toFixed(1) },
+    a.passing && a.passing.passPct != null && { k: "Best passing", l: a.passing, v: `${Math.round(a.passing.passPct)}%` },
+    a.scorer && { k: "Top scorer", l: a.scorer, v: `${a.scorer.goals} G` },
+    a.assister && { k: "Top assist", l: a.assister, v: `${a.assister.assists} A` },
+    a.motm && { k: "Most MOTM", l: a.motm, v: `${a.motm.motm}×` },
+  ].filter(Boolean) as { k: string; l: Recap["lines"][number]; v: string }[];
   return (
-    <div className="mt-4 border-t border-white/[0.06] pt-4">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold">Recap</span>
-        <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent">{r.record.W}W</span>
-        <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-xs font-semibold">{r.record.D}D</span>
-        <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-400">{r.record.L}L</span>
-        <span className="text-xs text-mute">
-          {r.record.gf}:{r.record.ga} · {r.matches.length} match{r.matches.length > 1 ? "es" : ""}
-          {!r.window.closed && " · live"}
-        </span>
+    <div className="mt-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="eyebrow">Recap</p>
+        <div className="flex items-center gap-1.5 text-xs font-semibold tabular-nums">
+          <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">{r.record.W}W</span>
+          <span className="rounded-full bg-white/[0.08] px-2 py-0.5">{r.record.D}D</span>
+          <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{r.record.L}L</span>
+          <span className="ml-1 text-mute">
+            {r.record.gf}:{r.record.ga} · {r.matches.length} MP
+          </span>
+        </div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3">
-        {chips.map((c) => (
-          <div key={c.k} className={`rounded-2xl px-3 py-2 ${c.gold ? "bg-[rgba(221,177,104,0.12)] ring-1 ring-[rgba(221,177,104,0.35)]" : "bg-white/[0.04]"}`}>
-            <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${c.gold ? "text-[#DDB168]" : "text-mute"}`}>{c.k}</p>
-            <p className="mt-0.5 truncate text-sm font-semibold">
-              {c.v} <span className="tabular-nums">{c.s}</span>
+
+      {a.mvp && (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl bg-[linear-gradient(120deg,rgba(221,177,104,0.18),rgba(221,177,104,0.04))] p-3 ring-1 ring-[rgba(221,177,104,0.3)]">
+          <Face src={a.mvp.avatar} name={a.mvp.name} size={48} gold />
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#DDB168]">MVP</p>
+            <p className="truncate text-base font-semibold leading-tight">{a.mvp.name}</p>
+            <p className="text-[11px] text-mute tabular-nums">
+              {a.mvp.goals} G · {a.mvp.assists} A · {a.mvp.motm} MOTM · {a.mvp.matches} MP
             </p>
-            <p className="text-[11px] text-mute">{c.mp} MP</p>
           </div>
+          <p className="text-display text-3xl tabular-nums text-[#DDB168]">{a.mvp.avgRating.toFixed(1)}</p>
+        </div>
+      )}
+
+      <ul className="mt-2 divide-y divide-white/[0.05] rounded-2xl bg-white/[0.03] px-3">
+        {rows.map((x) => (
+          <li key={x.k} className="flex items-center gap-3 py-2.5">
+            <Face src={x.l.avatar} name={x.l.name} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mute">{x.k}</p>
+              <p className="truncate text-sm font-semibold leading-tight">
+                {x.l.name} <span className="font-normal text-mute">· {x.l.matches} MP</span>
+              </p>
+            </div>
+            <p className="text-lg font-semibold tabular-nums">{x.v}</p>
+          </li>
         ))}
-      </div>
-      <details className="group mt-3">
-        <summary className="cursor-pointer list-none text-xs font-medium text-mute hover:text-chalk">
-          <span className="group-open:hidden">Show everyone ›</span>
-          <span className="hidden group-open:inline">Hide ‹</span>
+      </ul>
+
+      <details className="group mt-2">
+        <summary className="flex cursor-pointer list-none items-center justify-center gap-1 rounded-2xl py-2 text-xs font-medium text-mute transition hover:text-chalk">
+          <span className="group-open:hidden">Everyone&apos;s stats</span>
+          <span className="hidden group-open:inline">Hide stats</span>
+          <svg viewBox="0 0 24 24" className="size-3.5 transition group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+            <path d="m6 9 6 6 6-6" />
+          </svg>
         </summary>
-        <div className="mt-2 overflow-x-auto">
+        <div className="overflow-x-auto rounded-2xl bg-white/[0.03] px-3 py-1">
           <table className="w-full text-left text-xs tabular-nums">
             <thead className="text-mute">
               <tr>
-                <th className="py-1.5 pr-3 font-medium">Player</th>
-                <th className="px-2 font-medium">MP</th>
-                <th className="px-2 font-medium">G</th>
-                <th className="px-2 font-medium">A</th>
-                <th className="px-2 font-medium">MOTM</th>
-                <th className="px-2 font-medium">Rating</th>
-                <th className="px-2 font-medium">Pass</th>
+                <th className="py-2 pr-2 font-medium">Player</th>
+                <th className="px-1.5 text-right font-medium">MP</th>
+                <th className="px-1.5 text-right font-medium">G</th>
+                <th className="px-1.5 text-right font-medium">A</th>
+                <th className="px-1.5 text-right font-medium">Rtg</th>
+                <th className="pl-1.5 text-right font-medium">Pass</th>
               </tr>
             </thead>
             <tbody>
               {r.lines.map((l) => (
                 <tr key={l.gamertag} className="border-t border-white/[0.05]">
-                  <td className="max-w-[9rem] truncate py-1.5 pr-3 font-medium">{l.name}</td>
-                  <td className="px-2">{l.matches}</td>
-                  <td className="px-2">{l.goals}</td>
-                  <td className="px-2">{l.assists}</td>
-                  <td className="px-2">{l.motm}</td>
-                  <td className="px-2">{l.avgRating.toFixed(1)}</td>
-                  <td className="px-2">{l.passPct != null ? `${Math.round(l.passPct)}%` : "—"}</td>
+                  <td className="py-2 pr-2">
+                    <span className="flex items-center gap-2">
+                      <Face src={l.avatar} name={l.name} size={22} />
+                      <span className="max-w-[7.5rem] truncate font-medium">{l.name}</span>
+                      {l.motm > 0 && <span className="text-[10px] text-[#DDB168]">★{l.motm > 1 ? l.motm : ""}</span>}
+                    </span>
+                  </td>
+                  <td className="px-1.5 text-right">{l.matches}</td>
+                  <td className="px-1.5 text-right">{l.goals}</td>
+                  <td className="px-1.5 text-right">{l.assists}</td>
+                  <td className="px-1.5 text-right">{l.avgRating.toFixed(1)}</td>
+                  <td className="pl-1.5 text-right">{l.passPct != null ? `${Math.round(l.passPct)}%` : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -81,8 +123,6 @@ function RecapBlock({ r }: { r: Recap }) {
     </div>
   );
 }
-
-export const metadata: Metadata = { title: "Matchday history" };
 
 function parts(iso: string) {
   const d = new Date(iso);
@@ -115,9 +155,14 @@ export default async function MatchdayHistory() {
             const slots = formationSlots(md.formation);
             return (
               <Reveal key={md.id} delay={Math.min(i * 0.04, 0.3)}>
-                <li className="tile p-5 md:p-6">
+                <li className="tile relative p-5 md:p-6">
+                 {manage && (
+                   <div className="absolute right-4 top-4 z-10">
+                     <DeleteMatchday id={md.id} />
+                   </div>
+                 )}
                  <div className="flex flex-col gap-5 md:flex-row md:items-center">
-                  <div className="flex items-center gap-5 md:w-56 md:shrink-0">
+                  <div className="flex items-center gap-5 pr-12 md:w-56 md:shrink-0 md:pr-0">
                     <div className="text-center">
                       <p className="text-display text-5xl leading-none tabular-nums">{p.day}</p>
                       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">{p.month}</p>
@@ -146,12 +191,15 @@ export default async function MatchdayHistory() {
                       <p className="text-xs text-mute">No lineup was set.</p>
                     )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
+                 </div>
+                 {recaps[i] && <RecapBlock r={recaps[i]} />}
+                  <div className={`mt-4 grid gap-2 ${recaps[i]?.matches.length ? "grid-cols-2" : "grid-cols-1"}`}>
                     <ShareButton
                       url={`/share/lineup?id=${md.id}`}
                       filename={`revorfest-lineup-${md.scheduled_at.slice(0, 10)}.png`}
                       title="Revorfest lineup"
-                      className="bg-white/[0.06]"
+                      label="Share lineup"
+                      className="justify-center bg-white/[0.06] py-2.5"
                     />
                     {recaps[i]?.matches.length ? (
                       <ShareButton
@@ -159,13 +207,10 @@ export default async function MatchdayHistory() {
                         filename={`revorfest-recap-${md.scheduled_at.slice(0, 10)}.png`}
                         title="Revorfest matchday recap"
                         label="Share recap"
-                        className="bg-white/[0.06]"
+                        className="justify-center bg-accent py-2.5 text-on-accent"
                       />
                     ) : null}
-                    {manage && <DeleteMatchday id={md.id} />}
                   </div>
-                 </div>
-                 {recaps[i] && <RecapBlock r={recaps[i]} />}
                 </li>
               </Reveal>
             );

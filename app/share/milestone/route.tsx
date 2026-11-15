@@ -25,7 +25,7 @@ export async function GET(req: Request) {
         <Avatar src={av} name={p.display_name} size={260} ring={C.volt} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -4, lineHeight: 1 }}>{p.display_name}</div>
-          <div style={{ display: "flex", marginTop: 10, fontSize: 32, color: C.mute }}>{`#${p.jersey_number} · ${p.primary_position}`}</div>
+          <div style={{ display: "flex", marginTop: 10, fontSize: 32, color: C.mute }}>{`@${p.ea_gamertag} · ${p.primary_position}`}</div>
         </div>
       </div>
     </Frame>,
