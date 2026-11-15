@@ -28,7 +28,7 @@ export async function updateProfile(form: FormData): Promise<ActionResult> {
   if (!secondary.every(isPosition) || secondary.length > 3) return { ok: false, error: "Pick up to 3 secondary positions." };
 
   const avatar = await readAvatar(form.get("avatar"));
-  if (avatar && "error" in avatar) return { ok: false, error: avatar.error };
+  if (avatar && !avatar.ok) return { ok: false, error: avatar.error };
 
   const sql = db();
   const slug = name === me.display_name ? me.slug : await uniqueSlug(name, me.id);

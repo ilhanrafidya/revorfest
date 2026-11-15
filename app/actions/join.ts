@@ -47,7 +47,7 @@ export async function register(form: FormData): Promise<ActionResult> {
   if (!/^\d{4}$/.test(pin)) return { ok: false, error: "Your PIN must be 4 digits." };
 
   const avatar = await readAvatar(form.get("avatar"));
-  if (avatar && "error" in avatar) return { ok: false, error: avatar.error };
+  if (avatar && !avatar.ok) return { ok: false, error: avatar.error };
 
   const sql = db();
   const [{ count }] = (await sql`SELECT count(*)::int AS count FROM players`) as { count: number }[];
