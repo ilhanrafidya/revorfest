@@ -140,7 +140,7 @@ export function PlayerCardView({ c }: { c: CardData }) {
 }
 
 /** Opens a player's card in a sheet; fetches it on demand. */
-export function CardSheet({ slug, onClose }: { slug: string | null; onClose: () => void }) {
+export function CardSheet({ slug, onClose, showProfile = true }: { slug: string | null; onClose: () => void; showProfile?: boolean }) {
   const [data, setData] = useState<CardData | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -184,9 +184,11 @@ export function CardSheet({ slug, onClose }: { slug: string | null; onClose: () 
             )}
           </m.div>
           <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <Link href={`/squad/${slug}`} className="glass hairline rounded-full px-5 py-2.5 text-sm font-semibold">
-              Full profile
-            </Link>
+            {showProfile && (
+              <Link href={`/squad/${slug}`} className="glass hairline rounded-full px-5 py-2.5 text-sm font-semibold">
+                Full profile
+              </Link>
+            )}
             <button type="button" onClick={onClose} className="rounded-full bg-chalk px-5 py-2.5 text-sm font-semibold text-black">
               Close
             </button>

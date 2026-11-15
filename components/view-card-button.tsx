@@ -19,7 +19,7 @@ export function ViewCardButton({ slug }: { slug: string }) {
         </svg>
         View card
       </button>
-      <CardSheet slug={open ? slug : null} onClose={() => setOpen(false)} />
+      <CardSheet slug={open ? slug : null} onClose={() => setOpen(false)} showProfile={false} />
     </>
   );
 }
