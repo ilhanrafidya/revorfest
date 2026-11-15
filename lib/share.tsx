@@ -148,7 +148,7 @@ export function Hero({
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", marginTop, width: "100%" }}>
       {number != null ? (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: -70, display: "flex", justifyContent: "center", fontSize: 460, fontWeight: 900, letterSpacing: -24, lineHeight: 1, color: tint }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: -130, display: "flex", justifyContent: "center", fontSize: 620, fontWeight: 900, letterSpacing: -34, lineHeight: 1, color: tint }}>
           {String(number)}
         </div>
       ) : null}
