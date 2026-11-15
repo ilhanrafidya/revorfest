@@ -11,6 +11,7 @@ import { ResultPill } from "@/components/stat-bits";
 import { ViewCardButton } from "@/components/view-card-button";
 import { TrophyCabinet } from "@/components/trophy-cabinet";
 import { allAwards, hattricks, milestonesFor } from "@/lib/awards";
+import { weekStart } from "@/lib/honors";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getPlayerBySlug((await params).slug);
@@ -103,7 +104,7 @@ export default async function PlayerPage({
       </p>
 
       <Reveal className="relative mt-12">
-        <TrophyCabinet slug={p.slug} name={p.display_name} awards={awards.get(p.id) ?? null} hattricks={tricks} milestones={milestonesFor(ea)} />
+        <TrophyCabinet slug={p.slug} name={p.display_name} awards={awards.get(p.id) ?? null} hattricks={tricks.filter((h) => new Date(h.playedAt) >= weekStart())} milestones={milestonesFor(ea)} />
       </Reveal>
 
       {recent.length > 0 && (

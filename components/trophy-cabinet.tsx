@@ -60,7 +60,7 @@ export function TrophyCabinet({
       tone: "volt",
       icon: "boot",
       title: h.goals >= 5 ? "Five-star show" : h.goals === 4 ? "Poker" : "Hattrick Hero",
-      sub: `${h.goals} goals vs ${h.opponent} · ${h.gf}–${h.ga}`,
+      sub: `This week · ${h.goals} goals vs ${h.opponent} · ${h.gf}–${h.ga}`,
       url: `/share/hattrick?match=${h.matchId}&tag=${encodeURIComponent(h.gamertag)}`,
       file: `revorfest-hattrick-${h.matchId}.png`,
     });
@@ -89,7 +89,7 @@ export function TrophyCabinet({
       </div>
       {items.length === 0 ? (
         <p className="tile p-6 text-sm text-mute">
-          {name} hasn&apos;t won anything yet. Weekly awards, hattricks, career milestones and EA season awards all land here — each with its own story to share.
+          {name} hasn&apos;t won anything yet. Weekly awards, this week's hattricks, career milestones and EA season awards all land here — each with its own story to share.
         </p>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
