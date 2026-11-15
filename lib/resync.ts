@@ -36,7 +36,7 @@ export async function resyncStatus(): Promise<ResyncStatus> {
 }
 
 /** Starts the GitHub Actions EA sync now. Cooldown is claimed atomically in the DB. */
-export async function triggerResync(playerId: string): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+export async function triggerResync(playerId: string, opts: { force?: boolean } = {}): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const token = process.env.GITHUB_SYNC_TOKEN;
   if (!token) return { ok: false, error: "Sync button isn't set up yet.", status: 503 };
   await ensureSchema();
@@ -45,7 +45,11 @@ export async function triggerResync(playerId: string): Promise<{ ok: true } | { 
     ON CONFLICT (kind) DO UPDATE SET data = EXCLUDED.data, fetched_at = now()
     WHERE ea_state.fetched_at < now() - interval '5 minutes'
     RETURNING kind`) as unknown[];
-  if (!claimed.length) return { ok: false, error: "Just synced — try again in a few minutes.", status: 429 };
+  if (!claimed.length) {
+    if (!opts.force) return { ok: false, error: "Just synced — try again in a few minutes.", status: 429 };
+    // Full time: still dispatch — GitHub queues it behind any running sync (concurrency group)
+    await db()`UPDATE ea_state SET data = ${JSON.stringify({ by: playerId })}::jsonb, fetched_at = now() WHERE kind = 'manual_sync'`;
+  }
 
   const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
     method: "POST",
@@ -59,6 +63,7 @@ export async function triggerResync(playerId: string): Promise<{ ok: true } | { 
   }).catch(() => null);
 
   if (!res || res.status !== 204) {
+    if (opts.force) return { ok: false, error: "GitHub didn't accept the sync request.", status: 502 };
     // release the cooldown so someone can retry
     await db()`UPDATE ea_state SET fetched_at = now() - interval '1 hour' WHERE kind = 'manual_sync'`;
     return { ok: false, error: "GitHub didn't accept the sync request.", status: 502 };

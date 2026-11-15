@@ -144,10 +144,12 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS push_subs_player ON push_subs (player_id)`,
+  // v7 — when "Full time" was pressed (matchday recap window)
+  `ALTER TABLE matchdays ADD COLUMN IF NOT EXISTS ended_at timestamptz`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 let ready: Promise<void> | null = null;
 

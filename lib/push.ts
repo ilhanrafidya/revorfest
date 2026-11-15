@@ -1,4 +1,6 @@
 import "server-only";
+import { matchdayRecap } from "./recap";
+import { matchdayById } from "./matchday";
 import { seasonWinners } from "./awards";
 import { db, ensureSchema } from "./db";
 import { pickHonors, rangeTable, weekKey, weekLabel, weekStart } from "./honors";
@@ -130,6 +132,34 @@ export async function announcePending() {
         tag: `vote-${w.votingKey}`,
       }));
       out.push("vote");
+    }
+  }
+
+  // Matchday recap — after the first sync that started after "Full time".
+  const [pend] = (await db()`SELECT data FROM ea_state WHERE kind = 'recap_pending'`) as { data: { id: string; at: string } }[];
+  if (pend && Date.now() - new Date(pend.data.at).getTime() >= 45_000) {
+    const md = await matchdayById(pend.data.id);
+    const r = md ? await matchdayRecap(md) : null;
+    const stale = Date.now() - new Date(pend.data.at).getTime() > 20 * 60_000;
+    // nothing synced yet? keep waiting for the next ingest (up to 20 min)
+    const gone = r && (r.matches.length || stale) ? ((await db()`DELETE FROM ea_state WHERE kind = 'recap_pending' AND data->>'id' = ${pend.data.id} RETURNING kind`) as unknown[]) : [];
+    if (md && r && gone.length) {
+      if (r.matches.length) {
+        const mvp = r.awards.mvp;
+        const title = md.note?.trim() || "Matchday";
+        const rec = `${r.record.W}W ${r.record.D}D ${r.record.L}L`;
+        await notify((pid) => ({
+          title: `📋 Matchday recap · ${title}`,
+          body: mvp
+            ? pid === mvp.playerId
+              ? `${rec} · You're the MVP, ${mvp.name}! ${mvp.avgRating.toFixed(1)} avg in ${mvp.matches} MP`
+              : `${rec} · MVP ${mvp.name} (${mvp.avgRating.toFixed(1)} avg · ${mvp.matches} MP)`
+            : rec,
+          url: "/matchday/history",
+          tag: `recap-${md.id}`,
+        }));
+        out.push(`recap-${md.id}`);
+      }
     }
   }
 

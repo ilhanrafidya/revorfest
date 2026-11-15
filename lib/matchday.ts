@@ -18,6 +18,7 @@ export type MatchdayPlayer = {
 export type Matchday = {
   id: string;
   scheduled_at: string;
+  ended_at?: string | null;
   formation: string;
   kit: Kit;
   note: string | null;
@@ -38,8 +39,8 @@ export async function currentMatchday(): Promise<Matchday | null> {
 
 export async function matchdayById(id: string): Promise<Matchday | null> {
   await ensureSchema();
-  const [m] = (await db()`SELECT id, scheduled_at, formation, kit, note, status FROM matchdays WHERE id = ${id}`) as Matchday[];
-  return m ? { ...m, scheduled_at: new Date(m.scheduled_at).toISOString() } : null;
+  const [m] = (await db()`SELECT id, scheduled_at, ended_at, formation, kit, note, status FROM matchdays WHERE id = ${id}`) as Matchday[];
+  return m ? { ...m, scheduled_at: new Date(m.scheduled_at).toISOString(), ended_at: m.ended_at ? new Date(m.ended_at).toISOString() : null } : null;
 }
 
 export async function matchdayRoster(matchdayId: string) {
@@ -123,6 +124,7 @@ export async function latestMatchdayAlert(): Promise<MatchdayAlert | null> {
 export type PastMatchday = {
   id: string;
   scheduled_at: string;
+  ended_at: string | null;
   formation: string;
   kit: Kit;
   note: string | null;
@@ -136,7 +138,7 @@ export async function pastMatchdays(limit = 30): Promise<PastMatchday[]> {
   await ensureSchema();
   const sql = db();
   const rows = (await sql`
-    SELECT m.id, m.scheduled_at, m.formation, m.kit, m.note, c.display_name AS by,
+    SELECT m.id, m.scheduled_at, m.ended_at, m.formation, m.kit, m.note, c.display_name AS by,
            (SELECT count(*)::int FROM matchday_attendance a WHERE a.matchday_id = m.id AND a.status = 'ready') AS ready
     FROM matchdays m LEFT JOIN players c ON c.id = m.created_by
     WHERE m.status = 'done'
@@ -151,6 +153,7 @@ export async function pastMatchdays(limit = 30): Promise<PastMatchday[]> {
   return rows.map((r) => ({
     ...r,
     scheduled_at: new Date(r.scheduled_at).toISOString(),
+    ended_at: r.ended_at ? new Date(r.ended_at).toISOString() : null,
     lineup: slots.filter((s) => s.matchday_id === r.id).map(({ slot, name, number }) => ({ slot, name, number })),
   }));
 }

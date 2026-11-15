@@ -1,4 +1,5 @@
 "use server";
+import { triggerResync } from "@/lib/resync";
 
 import { revalidatePath } from "next/cache";
 import { notifyMatchday } from "@/lib/push";
@@ -46,7 +47,15 @@ export async function createMatchday(local: string, note: string): Promise<Resul
 
 export async function closeMatchday(id: string): Promise<Result> {
   if (!(await manager())) return { ok: false, error: "Not allowed." };
-  await db()`UPDATE matchdays SET status = 'done' WHERE id = ${id}`;
+  const me = await currentPlayer();
+  const [md] = (await db()`UPDATE matchdays SET status = 'done', ended_at = coalesce(ended_at, now())
+                           WHERE id = ${id} RETURNING id, ended_at`) as { id: string; ended_at: string }[];
+  if (md) {
+    // recap goes out after the sync that starts now has landed
+    await db()`INSERT INTO ea_state (kind, data, fetched_at) VALUES ('recap_pending', ${JSON.stringify({ id, at: new Date(md.ended_at).toISOString() })}::jsonb, now())
+               ON CONFLICT (kind) DO UPDATE SET data = EXCLUDED.data, fetched_at = now()`;
+    await triggerResync(me?.id ?? "fulltime", { force: true }).catch(() => null);
+  }
   return done();
 }
 
