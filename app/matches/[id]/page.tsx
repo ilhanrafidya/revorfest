@@ -5,6 +5,7 @@ import { Reveal } from "@/components/motion-primitives";
 import { ResultPill, WhoLink } from "@/components/stat-bits";
 import { MATCH_TYPE_LABEL, matchDate } from "@/lib/format";
 import { matchDetail } from "@/lib/stats";
+import { ShareButton } from "@/components/share-button";
 
 export const metadata: Metadata = { title: "Match" };
 
@@ -39,6 +40,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <ResultPill result={m.result} />
           <span className="text-sm text-mute">{verdict}</span>
         </div>
+        <ShareButton url={`/share/match?id=${m.match_id}`} filename={`revorfest-${m.match_id}.png`} title="Revorfest full time" className="mt-6 bg-accent/15 text-accent" />
       </Reveal>
 
       <Reveal delay={0.1} className="tile mt-10 p-5 text-center">

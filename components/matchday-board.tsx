@@ -116,11 +116,11 @@ export function MatchdayBoard({
         />
         <div className="relative">
           <p className="eyebrow">Next matchday</p>
+          {matchday.note && <p className="mt-2 text-lg font-semibold tracking-tight text-chalk/90 md:text-xl">{matchday.note}</p>}
           <p className="text-display mt-3 text-6xl leading-[0.9] md:text-8xl">{when.weekday}</p>
           <p className="text-gradient mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
             {when.date} <span className="text-mute/70">·</span> {when.time} <span className="text-base font-medium text-mute md:text-lg">WIB</span>
           </p>
-          {matchday.note && <p className="mt-3 max-w-md text-mute">{matchday.note}</p>}
 
           <dl className="mt-8 grid grid-cols-4 gap-px overflow-hidden rounded-2xl bg-white/[0.06]">
             {[
@@ -580,9 +580,9 @@ export function ScheduleForm({ hasCurrent }: { hasCurrent: boolean }) {
     <div className="tile space-y-4 p-6">
       <p className="text-lg font-semibold">Schedule a matchday</p>
       {hasCurrent && <p className="text-xs text-mute">This replaces the current matchday (it will be marked finished).</p>}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
-        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (e.g. Div 4 push)" maxLength={80} />
+      <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+        <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className="block min-w-0 max-w-full appearance-none text-left [&::-webkit-date-and-time-value]:text-left" />
+        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Matchday title (e.g. Road to Div 4)" maxLength={80} />
       </div>
       <ErrorText>{error}</ErrorText>
       <Button

@@ -42,3 +42,10 @@ export function finishedSeasons(now = new Date()): Season[] {
   }
   return out.reverse();
 }
+
+export function seasonByNumber(n: number): Season | null {
+  if (!Number.isInteger(n) || n < 1 || n > 60) return null;
+  let s = SEASONS[0] as Season;
+  while (s.n < n) s = seasonAt(new Date(s.end.getTime() + 1));
+  return s;
+}

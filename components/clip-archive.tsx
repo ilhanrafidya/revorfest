@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BackLink } from "./back-link";
+import { ShareButton } from "./share-button";
 import { ClipPlayer } from "./clip-card";
 import { Reveal } from "./motion-primitives";
 import type { Winner } from "@/lib/clips";
@@ -34,6 +35,12 @@ export function ClipArchive({ kind, items }: { kind: "gotw" | "notw"; items: Win
                     )}{" "}
                     · {w.votes} votes
                   </p>
+                  <ShareButton
+                    url={`/share/showdown?cat=${kind}&week=${w.weekKey}`}
+                    filename={`revorfest-${kind}-${w.weekKey}.png`}
+                    title={fame ? "Revorfest Goal of the Week" : "Revorfest Nyunda of the Week"}
+                    className={`mt-3 ${fame ? "bg-gold/15 text-gold" : "bg-depleted/15 text-depleted"}`}
+                  />
                 </div>
               </div>
             </Reveal>

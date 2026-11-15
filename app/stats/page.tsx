@@ -7,19 +7,26 @@ import { ResultPill, WhoLink } from "@/components/stat-bits";
 import { MIN_MATCHES, honorsFor, weekStart, type WeeklyLine } from "@/lib/honors";
 import { MATCH_TYPE_LABEL, matchDate, timeAgo } from "@/lib/format";
 import { lastSync, leaderboards, recentMatches, type BoardEntry } from "@/lib/stats";
+import { rangeTable } from "@/lib/honors";
+import { seasonAt } from "@/lib/seasons";
+import { seasonWinners, MIN_SEASON_MATCHES } from "@/lib/awards";
 
 export const metadata: Metadata = { title: "Stats" };
 
 export default async function StatsPage() {
   const thisWeek = weekStart();
   const lastWeek = new Date(thisWeek.getTime() - 7 * 86400000);
-  const [sync, boards, matches, now, prev] = await Promise.all([
+  const season = seasonAt();
+  const [sync, boards, matches, now, prev, seasonTable] = await Promise.all([
     lastSync(),
     leaderboards(),
     recentMatches(15),
     honorsFor(thisWeek),
     honorsFor(lastWeek),
+    rangeTable(season.start, new Date()),
   ]);
+  const race = seasonWinners(seasonTable);
+  const seasonEnds = season.end.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Asia/Jakarta" });
 
   return (
     <section className="mx-auto max-w-6xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
@@ -42,6 +49,36 @@ export default async function StatsPage() {
           <HonorCard kind="potw" line={prev.potw} weekKey={prev.key} />
           <HonorCard kind="wpotw" line={prev.wpotw} weekKey={prev.key} />
         </div>
+        {prev.table.length > 0 && (
+          <ShareButton url={`/share/week?week=${prev.key}`} filename={`revorfest-week-${prev.key}.png`} title="Revorfest weekly recap" className="mt-4 glass hairline" />
+        )}
+      </Reveal>
+
+      {/* Season race */}
+      <Reveal className="mt-14">
+        <SectionTitle eyebrow={`EA ${season.name}`} title={`Season race · ends ${seasonEnds}`} />
+        <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+          {[
+            { k: "Player of the Season", l: race.pots, v: race.pots ? `${race.pots.avgRating.toFixed(1)} avg · ${race.pots.matches} MP` : `Needs ${MIN_SEASON_MATCHES}+ matches` },
+            { k: "Golden Boot", l: race.boot, v: race.boot ? `${race.boot.goals} goals` : "No goals yet" },
+            { k: "Top Assist", l: race.assist, v: race.assist ? `${race.assist.assists} assists` : "No assists yet" },
+          ].map((x) => (
+            <div key={x.k} className="tile p-5 ring-1 ring-gold/20">
+              <p className="text-sm font-semibold text-gold">{x.k}</p>
+              <div className="mt-4 flex items-center gap-3">
+                <PlayerAvatar name={x.l?.name ?? "?"} src={x.l?.avatar ?? null} className="size-12 text-sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-xl font-semibold">{x.l?.name ?? "—"}</p>
+                  <p className="text-xs text-mute">{x.v}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {(race.pots || race.boot || race.assist) && (
+          <ShareButton url={`/share/season?n=${season.n}`} filename={`revorfest-season-${season.n}.png`} title={`Revorfest ${season.name}`} className="mt-4 bg-gold/15 text-gold" />
+        )}
+        <p className="mt-3 text-xs text-mute">Follows EA&apos;s FC 27 season calendar. Winners lock in automatically when the season rolls over.</p>
       </Reveal>
 
       <Reveal className="mt-14">

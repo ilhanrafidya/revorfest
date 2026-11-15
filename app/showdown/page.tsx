@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ClipPlayer } from "@/components/clip-card";
 import { ShowdownTabs } from "@/components/showdown-tabs";
 import { Reveal } from "@/components/motion-primitives";
+import { ShareButton } from "@/components/share-button";
 import { weekClips, windowState, winners, type Category } from "@/lib/clips";
 import { listPlayers } from "@/lib/players";
 import { currentPlayer } from "@/lib/session";
@@ -62,6 +63,12 @@ export default async function ShowdownPage({ searchParams }: { searchParams: Pro
                     <p className="mt-1 text-sm text-mute">
                       {x.w.featuring?.name ?? x.w.submitter.name} · {x.w.votes} votes
                     </p>
+                    <ShareButton
+                      url={`/share/showdown?cat=${x.tone}&week=${x.w.weekKey}`}
+                      filename={`revorfest-${x.tone}-${x.w.weekKey}.png`}
+                      title={x.title}
+                      className={`mt-3 ${x.tone === "gotw" ? "bg-gold/15 text-gold" : "bg-depleted/15 text-depleted"}`}
+                    />
                   </div>
                 </div>
               ),

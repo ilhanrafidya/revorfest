@@ -4,6 +4,7 @@ import { AnimatePresence, m } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EASE } from "@/lib/motion";
+import { ShareButton } from "./share-button";
 
 type Stats = { scope: string; matches: number; goals: number; assists: number; motm: number; winRate: number | null; rating: number | null };
 type SeasonAward = { kind: "pots" | "boot" | "assist"; season: string; value: number };
@@ -183,7 +184,8 @@ export function CardSheet({ slug, onClose, showProfile = true }: { slug: string 
               </div>
             )}
           </m.div>
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex flex-wrap justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <ShareButton url={`/share/card?slug=${slug}`} filename={`revorfest-card-${slug}.png`} title="Revorfest player card" className="glass hairline px-5 py-2.5" />
             {showProfile && (
               <Link href={`/squad/${slug}`} className="glass hairline rounded-full px-5 py-2.5 text-sm font-semibold">
                 Full profile
