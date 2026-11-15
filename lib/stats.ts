@@ -74,7 +74,7 @@ export async function matchDetail(id: string) {
     FROM ea_matches WHERE match_id = ${id}`) as MatchRow[];
   if (!m) return null;
   const [rows, index, h2h] = await Promise.all([
-    sql`SELECT * FROM ea_match_players WHERE match_id = ${id} ORDER BY rating DESC NULLS LAST` as Promise<
+    sql`SELECT * FROM ea_match_players WHERE match_id = ${id} ORDER BY rating DESC NULLS LAST` as unknown as Promise<
       {
         gamertag: string;
         position: string | null;
@@ -93,7 +93,7 @@ export async function matchDetail(id: string) {
     >,
     rosterIndex(),
     m.opponent_id
-      ? (sql`SELECT result, count(*)::int AS n FROM ea_matches WHERE opponent_id = ${m.opponent_id} GROUP BY result` as Promise<
+      ? (sql`SELECT result, count(*)::int AS n FROM ea_matches WHERE opponent_id = ${m.opponent_id} GROUP BY result` as unknown as Promise<
           { result: string; n: number }[]
         >)
       : Promise.resolve([] as { result: string; n: number }[]),
@@ -158,7 +158,7 @@ export async function unlinkedGamertags(): Promise<string[]> {
   const [members, index, seen] = await Promise.all([
     state("members"),
     rosterIndex(),
-    db()`SELECT DISTINCT gamertag FROM ea_match_players` as Promise<{ gamertag: string }[]>,
+    db()`SELECT DISTINCT gamertag FROM ea_match_players` as unknown as Promise<{ gamertag: string }[]>,
   ]);
   const names = new Set<string>([...parseMembers(members).map((m) => m.name), ...seen.map((s) => s.gamertag)]);
   return [...names].filter((n) => !index.has(n.toLowerCase())).sort((a, b) => a.localeCompare(b));
