@@ -60,33 +60,38 @@ export default async function StatsPage() {
           <HonorCard kind="wpotw" line={prev.wpotw} weekKey={prev.key} />
         </div>
         {prev.table.length > 0 && wk && wk.w + wk.d + wk.l > 0 && (
-          <div className="tile mt-3 flex flex-col gap-4 p-5 md:mt-4 md:flex-row md:items-center md:p-6">
-            <div className="flex min-w-0 flex-1 items-center gap-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent">
-                <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <div className="tile mt-3 p-5 md:mt-4 md:p-6">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+                <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
                   <path d="M3.5 9.5h17M8 3v3M16 3v3M8 14h3M8 17h6" />
                 </svg>
               </span>
               <div className="min-w-0">
                 <p className="eyebrow">Weekly recap</p>
-                <p className="mt-0.5 truncate text-base font-semibold">{prev.label}</p>
-                <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold tabular-nums">
-                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">{wk.w}W</span>
-                  <span className="rounded-full bg-white/[0.08] px-2 py-0.5">{wk.d}D</span>
-                  <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{wk.l}L</span>
-                  <span className="ml-1 font-normal text-mute">
-                    {wk.gf}:{wk.ga} · results, top scorer & POTW in one story
-                  </span>
-                </div>
+                <p className="truncate text-base font-semibold">{prev.label}</p>
               </div>
+            </div>
+            <div className="mt-5 grid grid-cols-4 border-y border-white/[0.06] py-4 text-center">
+              {[
+                { k: "Wins", v: String(wk.w), c: "text-accent" },
+                { k: "Draws", v: String(wk.d), c: "" },
+                { k: "Losses", v: String(wk.l), c: "text-red-400" },
+                { k: "Goals", v: `${wk.gf}:${wk.ga}`, c: "" },
+              ].map((x) => (
+                <div key={x.k}>
+                  <p className={`text-display text-3xl tabular-nums ${x.c}`}>{x.v}</p>
+                  <p className="mt-1 text-[11px] text-mute">{x.k}</p>
+                </div>
+              ))}
             </div>
             <ShareButton
               url={`/share/week?week=${prev.key}`}
               filename={`revorfest-week-${prev.key}.png`}
               title="Revorfest weekly recap"
               label="Share weekly recap"
-              className="justify-center bg-accent py-2.5 text-on-accent md:shrink-0"
+              className="mt-4 w-full justify-center bg-accent py-2.5 text-on-accent"
             />
           </div>
         )}
