@@ -6,6 +6,39 @@ import { PlayerAvatar } from "./player-avatar";
 import { clubOverall, lastSync, leaderboards, recentMatches } from "@/lib/stats";
 import { honorsFor, weekStart } from "@/lib/honors";
 import { timeAgo } from "@/lib/format";
+import { currentMatchday, matchdayRoster } from "@/lib/matchday";
+import { clipCounts, windowState, winners } from "@/lib/clips";
+import { Jersey } from "./jersey";
+import Link from "next/link";
+
+async function loadExtras() {
+  try {
+    const md = await currentMatchday();
+    const roster = md ? (await matchdayRoster(md.id)).roster : [];
+    const w = windowState();
+    const [lastGotw, counts] = await Promise.all([winners("gotw", 1), clipCounts(w.key)]);
+    return {
+      matchday: md
+        ? {
+            when: new Date(md.scheduled_at).toLocaleString("en-GB", {
+              weekday: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Asia/Jakarta",
+            }),
+            kit: md.kit,
+            ready: roster.filter((p) => p.status === "ready").length,
+            onTheWay: roster.filter((p) => p.status === "on_the_way").length,
+            out: roster.filter((p) => p.status === "out").length,
+          }
+        : null,
+      gotw: lastGotw[0] ?? null,
+      clipsThisWeek: counts.gotw + counts.notw,
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function loadOverview() {
   try {
@@ -56,7 +89,7 @@ function Initials({ name, className = "" }: { name: string; className?: string }
 }
 
 export async function Overview() {
-  const real = await loadOverview();
+  const [real, extras] = await Promise.all([loadOverview(), loadExtras()]);
   const club = real?.club ?? {
     ...demo,
     division: 6,
@@ -221,31 +254,42 @@ export async function Overview() {
 
         {/* Next matchday */}
         <Reveal delay={0.05} className="col-span-2">
-          <TiltCard className="p-5 md:p-6">
-            <div className="flex h-full items-center justify-between gap-4">
-              <div className="flex h-full flex-col justify-between gap-5">
-                <div>
-                  <p className="eyebrow">Next matchday</p>
-                  <p className="mt-1 text-2xl font-semibold tracking-tight">{nextMatchday.when}</p>
+          <Link href="/matchday" className="block h-full">
+            <TiltCard className="p-5 md:p-6">
+              <div className="flex h-full items-center justify-between gap-4">
+                <div className="flex h-full flex-col justify-between gap-5">
+                  <div>
+                    <p className="eyebrow">Next matchday</p>
+                    <p className="mt-1 text-2xl font-semibold tracking-tight">
+                      {extras?.matchday ? `${extras.matchday.when} WIB` : real ? "Not scheduled yet" : nextMatchday.when}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="size-2 rounded-full bg-accent transition-colors duration-700" />
+                      {extras?.matchday?.ready ?? (real ? 0 : nextMatchday.ready)} Ready
+                    </span>
+                    <span className="flex items-center gap-2 text-mute">
+                      <span className="size-2 rounded-full bg-gold" />
+                      {extras?.matchday?.onTheWay ?? (real ? 0 : nextMatchday.onTheWay)} On the way
+                    </span>
+                    <span className="flex items-center gap-2 text-mute">
+                      <span className="size-2 rounded-full bg-depleted" />
+                      {extras?.matchday?.out ?? (real ? 0 : nextMatchday.out)} Out
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-accent transition-colors duration-700" />
-                    {nextMatchday.ready} Ready
-                  </span>
-                  <span className="flex items-center gap-2 text-mute">
-                    <span className="size-2 rounded-full bg-gold" />
-                    {nextMatchday.onTheWay} On the way
-                  </span>
-                  <span className="flex items-center gap-2 text-mute">
-                    <span className="size-2 rounded-full bg-depleted" />
-                    {nextMatchday.out} Out
-                  </span>
-                </div>
+                {extras?.matchday ? (
+                  <div className="flex shrink-0 flex-col items-center gap-1">
+                    <Jersey kit={extras.matchday.kit} className="size-20 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] md:size-24" />
+                    <span className="text-xs capitalize text-mute">{extras.matchday.kit} kit</span>
+                  </div>
+                ) : (
+                  <CurrentKitChip />
+                )}
               </div>
-              <CurrentKitChip />
-            </div>
-          </TiltCard>
+            </TiltCard>
+          </Link>
         </Reveal>
 
         {/* Golden boot */}
@@ -280,6 +324,7 @@ export async function Overview() {
 
         {/* GOTW clip */}
         <Reveal className="col-span-2">
+          <Link href="/showdown" className="block h-full">
           <TiltCard className="p-0">
             <div className="flex h-full min-h-[180px] flex-col justify-end">
               <div
@@ -297,11 +342,20 @@ export async function Overview() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent transition-colors duration-700">
                   Goal of the Week
                 </p>
-                <p className="mt-1 text-xl font-semibold tracking-tight">{real ? "Voting opens soon" : gotw.title}</p>
-                <p className="mt-1 text-sm text-mute">{real ? "Clip submissions arrive in Phase 4" : `${gotw.player} · ${gotw.votes} votes`}</p>
+                <p className="mt-1 truncate text-xl font-semibold tracking-tight">
+                  {extras?.gotw ? `“${extras.gotw.caption ?? "Worldie"}”` : real ? "Submit this week’s worldie" : gotw.title}
+                </p>
+                <p className="mt-1 text-sm text-mute">
+                  {extras?.gotw
+                    ? `${extras.gotw.featuring?.name ?? extras.gotw.submitter.name} · ${extras.gotw.votes} votes`
+                    : real
+                      ? `${extras?.clipsThisWeek ?? 0} clips in this week’s Showdown`
+                      : `${gotw.player} · ${gotw.votes} votes`}
+                </p>
               </div>
             </div>
           </TiltCard>
+          </Link>
         </Reveal>
 
         {/* WPOTW */}

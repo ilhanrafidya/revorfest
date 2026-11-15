@@ -84,10 +84,55 @@ const SCHEMA = [
     matches_added int NOT NULL DEFAULT 0,
     details jsonb
   )`,
+  `CREATE TABLE IF NOT EXISTS matchdays (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    scheduled_at timestamptz NOT NULL,
+    formation text NOT NULL DEFAULT '4-3-3',
+    kit text NOT NULL DEFAULT 'home' CHECK (kit IN ('home', 'away', 'third')),
+    note text,
+    status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'done')),
+    created_by uuid REFERENCES players (id) ON DELETE SET NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS matchday_attendance (
+    matchday_id uuid NOT NULL REFERENCES matchdays (id) ON DELETE CASCADE,
+    player_id uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    status text NOT NULL CHECK (status IN ('ready', 'on_the_way', 'out')),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (matchday_id, player_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS lineup_slots (
+    matchday_id uuid NOT NULL REFERENCES matchdays (id) ON DELETE CASCADE,
+    slot int NOT NULL CHECK (slot BETWEEN 0 AND 10),
+    player_id uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    PRIMARY KEY (matchday_id, slot),
+    UNIQUE (matchday_id, player_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS clips (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    week_key text NOT NULL,
+    category text NOT NULL CHECK (category IN ('gotw', 'notw')),
+    submitted_by uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    featuring uuid REFERENCES players (id) ON DELETE SET NULL,
+    url text NOT NULL,
+    provider text NOT NULL,
+    embed_id text NOT NULL,
+    caption text,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS clips_week_idx ON clips (week_key, category)`,
+  `CREATE TABLE IF NOT EXISTS clip_votes (
+    week_key text NOT NULL,
+    category text NOT NULL,
+    voter_id uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    clip_id uuid NOT NULL REFERENCES clips (id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (week_key, category, voter_id)
+  )`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 let ready: Promise<void> | null = null;
 
