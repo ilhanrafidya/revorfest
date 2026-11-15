@@ -2,8 +2,9 @@ name: EA sync
 
 on:
   schedule:
-    - cron: "*/15 12-19 * * *" # every 15 min, 19:00–02:59 WIB (match time)
-    - cron: "7 0-11,20-23 * * *" # hourly the rest of the day
+    # Backup only — cron-job.org hits /api/cron-sync every 15 min for on-time syncs; GitHub's schedule often runs late.
+    - cron: "7,22,37,52 12-19 * * *" # 19:00–02:59 WIB (match time), off-peak minutes
+    - cron: "37 0-11,20-23 * * *" # hourly the rest of the day
   workflow_dispatch: # "Run workflow" button in the Actions tab
   push:
     branches: [main]
