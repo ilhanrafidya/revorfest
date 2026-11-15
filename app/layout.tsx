@@ -35,7 +35,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: kitScript }} />
       </head>
-      <body className="min-h-svh bg-pitch font-sans text-chalk">
+      <body className="min-h-svh font-sans text-chalk">
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 transition-[background] duration-700"
+          style={{
+            background:
+              "radial-gradient(55% 45% at 10% 0%, color-mix(in oklab, var(--accent-2) 20%, transparent), transparent 70%), radial-gradient(50% 40% at 100% 55%, color-mix(in oklab, var(--glow) 16%, transparent), transparent 70%), radial-gradient(45% 35% at 0% 100%, color-mix(in oklab, var(--accent) 6%, transparent), transparent 70%)",
+          }}
+        />
         <Providers>
           <TopNav />
           <main>{children}</main>

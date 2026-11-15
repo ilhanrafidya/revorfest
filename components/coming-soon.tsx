@@ -25,7 +25,7 @@ export function ComingSoon({
         <h1 className="text-display mt-3 text-5xl md:text-8xl">
           {title}
           <br />
-          <span className="text-mute">{muted}</span>
+          <span className="text-gradient">{muted}</span>
         </h1>
         <p className="mx-auto mt-6 max-w-md text-lg text-mute">{description}</p>
         <span className="glass hairline mt-8 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm">

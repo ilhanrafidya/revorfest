@@ -19,7 +19,7 @@ export function Overview() {
         <h2 className="text-display mt-3 text-5xl md:text-7xl">
           The numbers
           <br />
-          <span className="text-mute">don&apos;t lie.</span>
+          <span className="text-gradient">don&apos;t lie.</span>
         </h2>
       </Reveal>
 
