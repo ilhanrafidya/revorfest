@@ -56,15 +56,17 @@ export function SubmitClip({ category, players }: { category: "gotw" | "notw"; p
       let poster: File | null = null;
       if (canTrim()) {
         setStage("trimming");
-        let best: Awaited<ReturnType<typeof trimClip>> | null = null;
-        for (const q of QUALITY_LADDER) {
+        let smallest: File | null = null;
+        let firstPoster: File | null = null;
+        for (const [i, q] of QUALITY_LADDER.entries()) {
           setProgress(0);
           const r = await trimClip(src, range.current.start, range.current.end, setProgress, q);
-          if (!best || r.video.size < best.video.size) best = { video: r.video, poster: best?.poster ?? r.poster };
+          if (i === 0) firstPoster = r.poster;
+          if (!smallest || r.video.size < smallest.size) smallest = r.video;
           if (r.video.size <= TARGET) break; // small enough — done
         }
-        video = best!.video;
-        poster = best!.poster;
+        video = smallest as File;
+        poster = firstPoster;
       } else {
         // very old browsers: send the original if it's already small enough
         const raw = await fetch(src).then((x) => x.blob());
