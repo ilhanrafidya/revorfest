@@ -129,10 +129,16 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (week_key, category, voter_id)
   )`,
+  // v5 — FC 27 positions: CF→CAM, LWB→LB, RWB→RB; "4-3-3 (5)" no longer exists.
+  `UPDATE players SET primary_position = CASE primary_position WHEN 'CF' THEN 'CAM' WHEN 'LWB' THEN 'LB' WHEN 'RWB' THEN 'RB' ELSE primary_position END
+     WHERE primary_position IN ('CF','LWB','RWB')`,
+  `UPDATE players SET secondary_positions = ARRAY(SELECT DISTINCT x FROM unnest(array_replace(array_replace(array_replace(secondary_positions,'CF','CAM'),'LWB','LB'),'RWB','RB')) x WHERE x <> primary_position)
+     WHERE secondary_positions && ARRAY['CF','LWB','RWB']`,
+  `UPDATE matchdays SET formation = '4-3-3 (2)' WHERE formation = '4-3-3 (5)'`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 let ready: Promise<void> | null = null;
 

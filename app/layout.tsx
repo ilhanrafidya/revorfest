@@ -4,6 +4,8 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { BottomTabBar, MobileAccount, TopNav } from "@/components/nav";
 import { currentPlayer } from "@/lib/session";
+import { latestMatchdayAlert } from "@/lib/matchday";
+import { MatchdayNotice } from "@/components/matchday-notice";
 import { avatarUrl } from "@/lib/players";
 import { Footer } from "@/components/footer";
 
@@ -32,7 +34,7 @@ export const viewport: Viewport = {
 const kitScript = `try{var k=localStorage.getItem('rf-kit');if(k==='home'||k==='away'||k==='third')document.documentElement.dataset.kit=k}catch(e){}`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const player = await currentPlayer();
+  const [player, mdAlert] = await Promise.all([currentPlayer(), latestMatchdayAlert()]);
   const me = player
     ? { slug: player.slug, name: player.display_name, avatar: avatarUrl({ id: player.id, avatar_version: player.avatar_version, has_avatar: player.has_avatar }) }
     : null;
@@ -53,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           <TopNav me={me} />
           <MobileAccount me={me} />
+          <MatchdayNotice alert={mdAlert} meId={player?.id ?? null} />
           <main>{children}</main>
           <Footer />
           <BottomTabBar />

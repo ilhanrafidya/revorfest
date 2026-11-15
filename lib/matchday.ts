@@ -85,3 +85,37 @@ export async function matchdayRoster(matchdayId: string) {
 export function canManage(role: string | undefined) {
   return role === "admin" || role === "captain";
 }
+
+export type MatchdayAlert = { id: string; when: string; by: string; byId: string | null; avatar: string | null; note: string | null };
+
+/** Latest open matchday + who scheduled it — drives the in-app "new matchday" notice. */
+export async function latestMatchdayAlert(): Promise<MatchdayAlert | null> {
+  try {
+    await ensureSchema();
+    const rows = (await db()`
+      SELECT m.id, m.scheduled_at, m.note, p.id AS pid, p.display_name, p.avatar_version, (p.avatar_b64 IS NOT NULL) AS has_avatar
+      FROM matchdays m LEFT JOIN players p ON p.id = m.created_by
+      WHERE m.status = 'open' AND m.created_at > now() - interval '7 days'
+      ORDER BY m.created_at DESC LIMIT 1`) as {
+      id: string;
+      scheduled_at: string;
+      note: string | null;
+      pid: string | null;
+      display_name: string | null;
+      avatar_version: number;
+      has_avatar: boolean;
+    }[];
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      id: r.id,
+      when: new Date(r.scheduled_at).toISOString(),
+      by: r.display_name ?? "A captain",
+      byId: r.pid,
+      avatar: r.pid ? avatarUrl({ id: r.pid, avatar_version: r.avatar_version, has_avatar: r.has_avatar }) : null,
+      note: r.note,
+    };
+  } catch {
+    return null;
+  }
+}

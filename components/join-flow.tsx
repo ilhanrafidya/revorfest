@@ -174,7 +174,7 @@ export function JoinFlow() {
               <Header eyebrow="Step 2" title="Who are you?" sub="This is how the squad sees you." />
               <AvatarInput name={name} onChange={setAvatar} />
               <Field label="Display name">
-                <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="e.g. Ilhan" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="e.g. Logic" />
               </Field>
               <Field label="EA ID / Gamertag" hint="Exactly as it appears in-game — we use it to link your EA stats.">
                 <Input

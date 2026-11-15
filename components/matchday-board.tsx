@@ -29,15 +29,10 @@ const STATUS: { key: Status; label: string; dot: string; active: string }[] = [
   { key: "out", label: "Out", dot: "bg-depleted", active: "bg-depleted text-white" },
 ];
 
-function whenLabel(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Jakarta",
-  });
+function whenParts(iso: string) {
+  const d = new Date(iso);
+  const f = (o: Intl.DateTimeFormatOptions) => d.toLocaleString("en-GB", { ...o, timeZone: "Asia/Jakarta" });
+  return { weekday: f({ weekday: "long" }), date: f({ day: "numeric", month: "long" }), time: f({ hour: "2-digit", minute: "2-digit" }) };
 }
 
 export function MatchdayBoard({
@@ -83,6 +78,8 @@ export function MatchdayBoard({
     },
   );
 
+  const when = useMemo(() => whenParts(matchday.scheduled_at), [matchday.scheduled_at]);
+  const [focus, setFocus] = useState<number | null>(null);
   const byId = useMemo(() => new Map(state.roster.map((p) => [p.id, p])), [state.roster]);
   const slots = formationSlots(state.formation);
   const me = meId ? byId.get(meId) : undefined;
@@ -108,22 +105,38 @@ export function MatchdayBoard({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Reveal className="tile p-6 md:p-8">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="eyebrow">Next matchday</p>
-            <p className="text-display mt-2 text-4xl md:text-5xl">{whenLabel(matchday.scheduled_at)}</p>
-            {matchday.note && <p className="mt-2 text-mute">{matchday.note}</p>}
-            <p className="mt-3 text-sm text-mute">
-              <span className="font-semibold text-accent">{groups[0].players.length} ready</span> · {groups[1].players.length} on the way ·{" "}
-              {groups[2].players.length} out · {noReply.length} no reply
-            </p>
-          </div>
-          <img src={`/kits/${state.kit}.png`} alt={`${KITS[state.kit].label} kit`} className="size-24 self-start object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.6)] md:size-28" />
+      <Reveal className="tile relative overflow-hidden p-6 md:p-10">
+        <img
+          src={`/kits/${state.kit}.png`}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-6 size-56 rotate-[8deg] object-contain opacity-[0.16] blur-[1px] md:-right-6 md:size-72"
+        />
+        <div className="relative">
+          <p className="eyebrow">Next matchday</p>
+          <p className="text-display mt-3 text-6xl leading-[0.9] md:text-8xl">{when.weekday}</p>
+          <p className="text-gradient mt-2 text-2xl font-semibold tracking-tight md:text-4xl">
+            {when.date} <span className="text-mute/70">·</span> {when.time} <span className="text-base font-medium text-mute md:text-lg">WIB</span>
+          </p>
+          {matchday.note && <p className="mt-3 max-w-md text-mute">{matchday.note}</p>}
+
+          <dl className="mt-8 grid grid-cols-4 gap-px overflow-hidden rounded-2xl bg-white/[0.06]">
+            {[
+              { k: "Ready", v: groups[0].players.length, c: "text-accent" },
+              { k: "On the way", v: groups[1].players.length, c: "text-gold" },
+              { k: "Out", v: groups[2].players.length, c: "text-depleted" },
+              { k: "No reply", v: noReply.length, c: "text-chalk/70" },
+            ].map((x) => (
+              <div key={x.k} className="bg-carbon/80 px-3 py-4 text-center md:py-5">
+                <dd className={`text-display text-3xl tabular-nums md:text-4xl ${x.c}`}>{x.v}</dd>
+                <dt className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-mute md:text-[11px]">{x.k}</dt>
+              </div>
+            ))}
+          </dl>
         </div>
 
         {me && (
-          <div className="mt-6">
+          <div className="relative mt-6">
             <p className="mb-2 text-sm font-medium">Are you in?</p>
             <div className="grid grid-cols-3 gap-2">
               {STATUS.map((s) => {
@@ -145,7 +158,7 @@ export function MatchdayBoard({
             </div>
           </div>
         )}
-        {!meId && <p className="mt-6 text-sm text-mute">Log in to set your status.</p>}
+        {!meId && <p className="relative mt-6 text-sm text-mute">Log in to set your status.</p>}
       </Reveal>
 
       <ErrorText>{error}</ErrorText>
@@ -208,21 +221,36 @@ export function MatchdayBoard({
 
           {/* Pitch */}
           <div
-            className="relative mx-auto aspect-[3/4] w-full max-w-[520px] overflow-hidden rounded-3xl"
+            className="relative mx-auto aspect-[3/4] w-full max-w-[540px] overflow-hidden rounded-[28px] ring-1 ring-white/10"
             style={{
               background:
-                "repeating-linear-gradient(0deg, #0b3d22 0 9%, #0e4627 9% 18%), radial-gradient(80% 60% at 50% 50%, rgba(255,255,255,0.05), transparent)",
+                "radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,0.07), transparent 60%), radial-gradient(100% 60% at 50% 100%, rgba(0,0,0,0.45), transparent 70%), repeating-linear-gradient(180deg, #0c2e1d 0 10%, #0f3523 10% 20%)",
             }}
+            onClick={() => setFocus(null)}
           >
+            <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.55)]" />
             <PitchLines />
+            <div className="pointer-events-none absolute left-5 top-4 md:left-6 md:top-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Formation</p>
+              <p className="text-display text-2xl text-white/90 md:text-3xl">{state.formation}</p>
+            </div>
+            <div className="pointer-events-none absolute right-5 top-4 text-right md:right-6 md:top-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">Kit</p>
+              <p className="text-sm font-semibold text-white/80 md:text-base">{KITS[state.kit].label}</p>
+            </div>
             {slots.map((s, i) => {
               const pid = state.lineup[i];
               const p = pid ? byId.get(pid) : undefined;
               const warn = p && !fitsSlot(s.label, p.positions);
+              const open = focus === i && !!p;
+              // keep the option pills inside the pitch for touchline slots
+              const side = s.x < 24 ? "right" : s.x > 76 ? "left" : "split";
+              const removeCls = side === "split" ? "right-full top-3 mr-1.5 md:top-4" : side === "right" ? "left-full -top-3 ml-1.5" : "right-full -top-3 mr-1.5";
+              const viewCls = side === "split" ? "left-full top-3 ml-1.5 md:top-4" : side === "right" ? "left-full top-7 ml-1.5" : "right-full top-7 mr-1.5";
               return (
                 <div
                   key={`${state.formation}-${i}`}
-                  className="absolute -translate-x-1/2 translate-y-1/2"
+                  className={`absolute -translate-x-1/2 translate-y-1/2 ${open ? "z-20" : "z-10"}`}
                   style={{ left: `${s.x}%`, bottom: `${s.y}%` }}
                   onDragOver={(e) => manage && e.preventDefault()}
                   onDrop={(e) => {
@@ -232,49 +260,100 @@ export function MatchdayBoard({
                     setDragId(null);
                   }}
                 >
+                  <AnimatePresence>
+                    {open && p && (
+                      <>
+                        {manage && (
+                          <m.button
+                            type="button"
+                            initial={{ opacity: 0, x: 8, scale: 0.8 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 8, scale: 0.8 }}
+                            transition={SPRING_SNAPPY}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              put(i, null);
+                              setFocus(null);
+                            }}
+                            aria-label={`Remove ${p.name}`}
+                            className={`absolute ${removeCls} flex items-center gap-1 whitespace-nowrap rounded-full bg-depleted px-3 py-2 text-[11px] font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.45)]`}
+                          >
+                            <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden><path d="M6 6l12 12M18 6L6 18" /></svg>
+                            Remove
+                          </m.button>
+                        )}
+                        <m.a
+                          href={`/squad/${p.slug}`}
+                          initial={{ opacity: 0, x: -8, scale: 0.8 }}
+                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                          exit={{ opacity: 0, x: -8, scale: 0.8 }}
+                          transition={SPRING_SNAPPY}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute ${viewCls} flex items-center gap-1 whitespace-nowrap rounded-full bg-chalk px-3 py-2 text-[11px] font-semibold text-black shadow-[0_8px_20px_rgba(0,0,0,0.45)]`}
+                        >
+                          <svg viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><rect x="5" y="3" width="14" height="18" rx="2.5" /><circle cx="12" cy="10" r="2.5" /><path d="M8.5 16.5c.8-1.6 2-2.4 3.5-2.4s2.7.8 3.5 2.4" /></svg>
+                          View card
+                        </m.a>
+                      </>
+                    )}
+                  </AnimatePresence>
                   <button
                     type="button"
-                    disabled={!manage}
+                    disabled={!manage && !p}
                     draggable={manage && !!p}
                     onDragStart={(e) => {
                       if (!p) return;
                       e.dataTransfer.setData("text/plain", p.id);
                       setDragId(p.id);
                     }}
-                    onClick={() => manage && setPicking(i)}
-                    className="flex w-16 flex-col items-center md:w-20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (p) setFocus(open ? null : i);
+                      else if (manage) {
+                        setFocus(null);
+                        setPicking(i);
+                      }
+                    }}
+                    className="group flex w-[72px] flex-col items-center md:w-24"
                   >
                     {p ? (
-                      <span className="relative block">
-                        <img src={`/kits/${state.kit}.png`} alt="" className="size-11 object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.5)] md:size-14" draggable={false} />
-                        <span
-                          className={`absolute inset-0 grid place-items-center pt-1 text-sm font-bold md:text-base ${
-                            state.kit === "home" ? "text-black" : state.kit === "away" ? "text-volt" : "text-white"
-                          }`}
-                          style={{ textShadow: state.kit === "home" ? "0 0 3px #fff" : "0 1px 2px #000" }}
-                        >
-                          {p.number}
-                        </span>
+                      <m.span animate={{ scale: open ? 1.08 : 1 }} transition={SPRING_SNAPPY} className="relative block">
+                        <span className={`absolute inset-x-1 bottom-0 h-2 rounded-full bg-black/60 blur-md transition ${open ? "opacity-100" : "opacity-70"}`} />
+                        <img src={`/kits/${state.kit}.png`} alt="" className="relative size-11 object-contain md:size-14" draggable={false} />
                         {warn && (
-                          <span title="Out of position" className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-gold text-[10px] font-black text-black">
+                          <span title="Out of position" className="absolute -right-1.5 -top-1 grid size-4 place-items-center rounded-full bg-gold text-[10px] font-black text-black ring-2 ring-black/40">
                             !
                           </span>
                         )}
-                      </span>
+                      </m.span>
                     ) : (
-                      <span className="grid size-11 place-items-center rounded-full border-2 border-dashed border-white/35 bg-black/25 text-[10px] font-bold text-white/80 md:size-14">
-                        {s.label}
+                      <span className="grid size-11 place-items-center rounded-full border border-dashed border-white/30 bg-white/[0.04] text-[10px] font-semibold tracking-wider text-white/70 backdrop-blur-sm transition group-hover:border-white/60 group-hover:text-white md:size-14 md:text-xs">
+                        {manage ? "+" : s.label}
                       </span>
                     )}
-                    <span className="mt-1 max-w-full truncate rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white md:text-xs">
-                      {p ? p.name : s.label}
-                    </span>
+                    {p ? (
+                      <span
+                        className={`mt-1.5 flex max-w-full items-center gap-1.5 rounded-full py-[3px] pl-[3px] pr-2.5 backdrop-blur-md transition ${
+                          open ? "bg-chalk text-black" : "bg-black/65 text-white ring-1 ring-white/10"
+                        }`}
+                      >
+                        <span className={`grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[10px] font-bold tabular-nums md:h-5 md:min-w-5 md:text-[11px] ${open ? "bg-black text-chalk" : "bg-accent text-on-accent"}`}>
+                          {p.number}
+                        </span>
+                        <span className="truncate text-[10px] font-semibold md:text-xs">{p.name}</span>
+                      </span>
+                    ) : (
+                      <span className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55 md:text-[11px]">{s.label}</span>
+                    )}
                   </button>
                 </div>
               );
             })}
           </div>
-          {manage && <p className="mt-3 text-center text-xs text-mute">Tap a spot to pick a player — or drag from the bench on desktop. ! = out of position.</p>}
+          <p className="mt-4 text-center text-xs text-mute">
+            {manage ? "Tap an empty spot to pick a player · tap a player for options · drag from the bench on desktop" : "Tap a player to view their card"}
+            {manage && <span className="text-gold"> · ! = out of position</span>}
+          </p>
         </Reveal>
 
         {/* Bench + attendance */}
@@ -325,15 +404,7 @@ export function MatchdayBoard({
               )}
             </div>
           ))}
-          {manage && (
-            <button
-              type="button"
-              onClick={() => run({ type: "clear" }, () => closeMatchday(matchday.id))}
-              className="w-full rounded-full bg-white/[0.04] px-4 py-3 text-xs font-semibold text-mute hover:text-chalk"
-            >
-              Mark matchday as finished
-            </button>
-          )}
+          {manage && <FullTime onConfirm={() => run({ type: "clear" }, () => closeMatchday(matchday.id))} />}
         </Reveal>
       </div>
 
@@ -408,15 +479,77 @@ export function MatchdayBoard({
 
 function PitchLines() {
   return (
-    <svg viewBox="0 0 300 400" className="pointer-events-none absolute inset-0 size-full" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1.5">
-      <rect x="10" y="10" width="280" height="380" rx="4" />
-      <line x1="10" y1="200" x2="290" y2="200" />
-      <circle cx="150" cy="200" r="36" />
-      <rect x="80" y="10" width="140" height="56" />
-      <rect x="115" y="10" width="70" height="20" />
-      <rect x="80" y="334" width="140" height="56" />
-      <rect x="115" y="370" width="70" height="20" />
+    <svg viewBox="0 0 300 400" className="pointer-events-none absolute inset-0 size-full" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.1">
+      <rect x="12" y="12" width="276" height="376" rx="3" />
+      <line x1="12" y1="200" x2="288" y2="200" />
+      <circle cx="150" cy="200" r="34" />
+      <circle cx="150" cy="200" r="1.8" fill="rgba(255,255,255,0.35)" stroke="none" />
+      <rect x="78" y="12" width="144" height="58" />
+      <rect x="114" y="12" width="72" height="20" />
+      <path d="M124 70a30 30 0 0 0 52 0" />
+      <circle cx="150" cy="52" r="1.6" fill="rgba(255,255,255,0.35)" stroke="none" />
+      <rect x="78" y="330" width="144" height="58" />
+      <rect x="114" y="368" width="72" height="20" />
+      <path d="M124 330a30 30 0 0 1 52 0" />
+      <circle cx="150" cy="348" r="1.6" fill="rgba(255,255,255,0.35)" stroke="none" />
+      <path d="M12 20a8 8 0 0 0 8-8M280 12a8 8 0 0 0 8 8M12 380a8 8 0 0 1 8 8M280 388a8 8 0 0 1 8-8" />
     </svg>
+  );
+}
+
+/** Hold-to-confirm "full time" control — no accidental taps. */
+function FullTime({ onConfirm }: { onConfirm: () => void }) {
+  const [holding, setHolding] = useState(false);
+  const [done, setDone] = useState(false);
+  const HOLD = 1.1;
+  return (
+    <div className="tile relative overflow-hidden p-4">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/[0.06]">
+          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+          </svg>
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">Full time</p>
+          <p className="text-xs text-mute">Closes the board and archives this lineup.</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        disabled={done}
+        onPointerDown={() => setHolding(true)}
+        onPointerUp={() => setHolding(false)}
+        onPointerLeave={() => setHolding(false)}
+        onPointerCancel={() => setHolding(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setDone(true);
+            onConfirm();
+          }
+        }}
+        className="relative mt-4 w-full select-none overflow-hidden rounded-full bg-white/[0.06] px-4 py-3.5 text-sm font-semibold text-chalk ring-1 ring-white/10 transition active:scale-[0.98]"
+      >
+        <m.span
+          aria-hidden
+          className="absolute inset-y-0 left-0 bg-accent"
+          initial={false}
+          animate={{ width: holding || done ? "100%" : "0%" }}
+          transition={{ duration: holding ? HOLD : 0.3, ease: holding ? "linear" : EASE }}
+          onAnimationComplete={() => {
+            if (holding && !done) {
+              setDone(true);
+              setHolding(false);
+              onConfirm();
+            }
+          }}
+        />
+        <span className={`relative transition-colors ${holding || done ? "text-on-accent" : ""}`}>
+          {done ? "Matchday finished ✓" : holding ? "Keep holding…" : "Hold to blow the final whistle"}
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -441,7 +574,7 @@ export function ScheduleForm({ hasCurrent }: { hasCurrent: boolean }) {
       {hasCurrent && <p className="text-xs text-mute">This replaces the current matchday (it will be marked finished).</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
-        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (e.g. Div 6 push)" maxLength={80} />
+        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (e.g. Div 4 push)" maxLength={80} />
       </div>
       <ErrorText>{error}</ErrorText>
       <Button

@@ -5,7 +5,7 @@ export type Slot = { label: string; x: number; y: number };
 const ROWS: Record<string, string[][]> = {
   "3-1-4-2": [["CB", "CB", "CB"], ["CDM"], ["LM", "CM", "CM", "RM"], ["ST", "ST"]],
   "3-4-1-2": [["CB", "CB", "CB"], ["LM", "CM", "CM", "RM"], ["CAM"], ["ST", "ST"]],
-  "3-4-2-1": [["CB", "CB", "CB"], ["LM", "CM", "CM", "RM"], ["CF", "CF"], ["ST"]],
+  "3-4-2-1": [["CB", "CB", "CB"], ["LM", "CM", "CM", "RM"], ["CAM", "CAM"], ["ST"]],
   "3-4-3": [["CB", "CB", "CB"], ["LM", "CM", "CM", "RM"], ["LW", "ST", "RW"]],
   "3-5-2": [["CB", "CB", "CB"], ["CDM", "CDM"], ["LM", "CAM", "RM"], ["ST", "ST"]],
   "4-1-2-1-2": [["LB", "CB", "CB", "RB"], ["CDM"], ["LM", "RM"], ["CAM"], ["ST", "ST"]],
@@ -18,33 +18,32 @@ const ROWS: Record<string, string[][]> = {
   "4-2-3-1 (2)": [["LB", "CB", "CB", "RB"], ["CDM", "CDM"], ["LM", "CAM", "RM"], ["ST"]],
   "4-2-4": [["LB", "CB", "CB", "RB"], ["CM", "CM"], ["LW", "ST", "ST", "RW"]],
   "4-3-1-2": [["LB", "CB", "CB", "RB"], ["CM", "CM", "CM"], ["CAM"], ["ST", "ST"]],
-  "4-3-2-1": [["LB", "CB", "CB", "RB"], ["CM", "CM", "CM"], ["CF", "CF"], ["ST"]],
+  "4-3-2-1": [["LB", "CB", "CB", "RB"], ["CM", "CM", "CM"], ["CAM", "CAM"], ["ST"]],
   "4-3-3": [["LB", "CB", "CB", "RB"], ["CM", "CM", "CM"], ["LW", "ST", "RW"]],
   "4-3-3 (2)": [["LB", "CB", "CB", "RB"], ["CDM"], ["CM", "CM"], ["LW", "ST", "RW"]],
   "4-3-3 (3)": [["LB", "CB", "CB", "RB"], ["CDM", "CDM"], ["CM"], ["LW", "ST", "RW"]],
   "4-3-3 (4)": [["LB", "CB", "CB", "RB"], ["CM", "CM"], ["CAM"], ["LW", "ST", "RW"]],
-  "4-3-3 (5)": [["LB", "CB", "CB", "RB"], ["CDM"], ["CM", "CM"], ["LW", "CF", "RW"]],
-  "4-4-1-1 (2)": [["LB", "CB", "CB", "RB"], ["LM", "CM", "CM", "RM"], ["CF"], ["ST"]],
+  "4-4-1-1 (2)": [["LB", "CB", "CB", "RB"], ["LM", "CM", "CM", "RM"], ["CAM"], ["ST"]],
   "4-4-2": [["LB", "CB", "CB", "RB"], ["LM", "CM", "CM", "RM"], ["ST", "ST"]],
   "4-4-2 (2)": [["LB", "CB", "CB", "RB"], ["CDM", "CDM"], ["LM", "RM"], ["ST", "ST"]],
   "4-5-1": [["LB", "CB", "CB", "RB"], ["CM"], ["LM", "CAM", "CAM", "RM"], ["ST"]],
   "4-5-1 (2)": [["LB", "CB", "CB", "RB"], ["LM", "CM", "CM", "CM", "RM"], ["ST"]],
-  "5-2-1-2": [["LWB", "CB", "CB", "CB", "RWB"], ["CM", "CM"], ["CAM"], ["ST", "ST"]],
-  "5-2-3": [["LWB", "CB", "CB", "CB", "RWB"], ["CM", "CM"], ["LW", "ST", "RW"]],
-  "5-3-2": [["LWB", "CB", "CB", "CB", "RWB"], ["CM", "CDM", "CM"], ["ST", "ST"]],
-  "5-4-1": [["LWB", "CB", "CB", "CB", "RWB"], ["LM", "CM", "CM", "RM"], ["ST"]],
+  "5-2-1-2": [["LB", "CB", "CB", "CB", "RB"], ["CM", "CM"], ["CAM"], ["ST", "ST"]],
+  "5-2-3": [["LB", "CB", "CB", "CB", "RB"], ["CM", "CM"], ["LW", "ST", "RW"]],
+  "5-3-2": [["LB", "CB", "CB", "CB", "RB"], ["CM", "CDM", "CM"], ["ST", "ST"]],
+  "5-4-1": [["LB", "CB", "CB", "CB", "RB"], ["LM", "CM", "CM", "RM"], ["ST"]],
 };
 
 export const FORMATIONS = Object.keys(ROWS);
 export const DEFAULT_FORMATION = "4-3-3";
 
 const Y: Record<string, number> = {
-  GK: 8, CB: 24, LB: 27, RB: 27, LWB: 34, RWB: 34, CDM: 39, CM: 51, LM: 53, RM: 53,
-  CAM: 64, CF: 72, LW: 77, RW: 77, ST: 85,
+  GK: 8, CB: 24, LB: 27, RB: 27, CDM: 39, CM: 51, LM: 53, RM: 53,
+  CAM: 66, LW: 77, RW: 77, ST: 85,
 };
 
 function spread(n: number, labels: string[]): number[] {
-  const wide = labels.every((l) => ["LM", "RM", "LW", "RW", "LWB", "RWB"].includes(l));
+  const wide = labels.every((l) => ["LM", "RM", "LW", "RW"].includes(l));
   if (n === 1) return [50];
   if (n === 2) return wide ? [13, 87] : [36, 64];
   if (n === 3) return [22, 50, 78];
@@ -72,19 +71,16 @@ export function isFormation(v: unknown): v is string {
 const FAMILY: Record<string, string[]> = {
   GK: ["GK"],
   CB: ["CB"],
-  LB: ["LB", "LWB"],
-  RB: ["RB", "RWB"],
-  LWB: ["LWB", "LB", "LM"],
-  RWB: ["RWB", "RB", "RM"],
+  LB: ["LB"],
+  RB: ["RB"],
   CDM: ["CDM", "CM"],
   CM: ["CM", "CDM", "CAM"],
-  CAM: ["CAM", "CM", "CF"],
-  LM: ["LM", "LW", "LWB"],
-  RM: ["RM", "RW", "RWB"],
+  CAM: ["CAM", "CM", "ST"],
+  LM: ["LM", "LW"],
+  RM: ["RM", "RW"],
   LW: ["LW", "LM"],
   RW: ["RW", "RM"],
-  CF: ["CF", "ST", "CAM"],
-  ST: ["ST", "CF"],
+  ST: ["ST", "CAM"],
 };
 
 /** True when a player with these positions is comfortable in `slot`. */

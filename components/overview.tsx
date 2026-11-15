@@ -62,8 +62,8 @@ async function loadOverview() {
         goalsFor: overall.goals,
         goalsAgainst: overall.goalsAgainst,
         winRate: overall.gamesPlayed ? Math.round((overall.wins / overall.gamesPlayed) * 1000) / 10 : 0,
-        division: overall.currentDivision,
-        bestDivision: overall.bestDivision,
+        division: clampDiv(overall.currentDivision),
+        bestDivision: clampDiv(overall.bestDivision),
         form: recent.map((m) => m.result).reverse(),
         lastMatch: last ? { opponent: last.opponent_name ?? "Unknown", score: `${last.goals_for}–${last.goals_against}` } : null,
       },
@@ -88,11 +88,16 @@ function Initials({ name, className = "" }: { name: string; className?: string }
   );
 }
 
+/** Pro Clubs league runs Div 1 (top) to Div 5 (bottom); EA sometimes reports 6+ for unplaced clubs. */
+function clampDiv(d: number | null) {
+  return d == null ? null : Math.min(Math.max(d, 1), 5);
+}
+
 export async function Overview() {
   const [real, extras] = await Promise.all([loadOverview(), loadExtras()]);
   const club = real?.club ?? {
     ...demo,
-    division: 6,
+    division: 5,
     bestDivision: 5,
     lastMatch: demo.lastMatch,
   };
