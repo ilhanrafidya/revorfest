@@ -63,7 +63,7 @@ export function TrophyCabinet({
       tone: "volt",
       icon: "boot",
       title: h.goals >= 5 ? "Five-star show" : h.goals === 4 ? "Poker" : "Hattrick Hero",
-      sub: `This week · ${h.goals} goals vs ${h.opponent} · ${h.gf}–${h.ga}`,
+      sub: `${h.goals} goals vs ${h.opponent} · ${h.gf}–${h.ga}`,
       url: `/share/hattrick?match=${h.matchId}&tag=${encodeURIComponent(h.gamertag)}`,
       file: `revorfest-hattrick-${h.matchId}.png`,
     });
