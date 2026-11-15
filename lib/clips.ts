@@ -20,11 +20,20 @@ export type ClipView = {
 
 const WIB_MS = 7 * 3600 * 1000;
 
-/** Submissions close Saturday 23:59 WIB; voting closes when the week ends (Sunday 23:59 WIB). */
+/**
+ * Schedule: clips can be submitted all week (Mon 00:00 – Sun 23:59 WIB).
+ * Voting for that week happens the following Monday (00:00 – 23:59 WIB); winners show from Tuesday.
+ */
 export function windowState(now = new Date()) {
   const start = weekStart(now);
-  const wibDay = new Date(now.getTime() + WIB_MS).getUTCDay(); // 0 = Sunday
-  return { key: weekKey(start), label: weekLabel(start), submissionsOpen: wibDay !== 0, votingOpen: true };
+  const prevStart = new Date(start.getTime() - 7 * 86400000);
+  const isMonday = new Date(now.getTime() + WIB_MS).getUTCDay() === 1;
+  return {
+    key: weekKey(start),
+    label: weekLabel(start),
+    votingKey: isMonday ? weekKey(prevStart) : null,
+    votingLabel: isMonday ? weekLabel(prevStart) : null,
+  };
 }
 
 type Row = {
@@ -77,7 +86,7 @@ async function query(where: string, params: unknown[], meId: string | null) {
   )) as (Row & { week_key: string; category: Category })[];
 }
 
-/** This week's clips. Vote counts stay hidden until the week is over. */
+/** A week's clips. Vote counts stay hidden until voting for that week is over. */
 export async function weekClips(key: string, category: Category, meId: string | null) {
   const rows = await query(`c.week_key = $1 AND c.category = $2`, [key, category], meId);
   return rows.map((r) => view(r, false));
@@ -87,8 +96,10 @@ export type Winner = ClipView & { weekKey: string; weekLabel: string };
 
 /** Winners of finished weeks (most votes, earliest submission breaks ties). */
 export async function winners(category: Category, limit = 52): Promise<Winner[]> {
-  const current = weekKey(weekStart());
-  const rows = await query(`c.category = $1 AND c.week_key < $2`, [category, current], null);
+  const w = windowState();
+  const rows = (await query(`c.category = $1 AND c.week_key < $2`, [category, w.key], null)).filter(
+    (r) => r.week_key !== w.votingKey, // still being voted on today
+  );
   const best = new Map<string, (typeof rows)[number]>();
   for (const r of rows) {
     if (r.votes < 1) continue;

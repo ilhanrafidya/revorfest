@@ -15,7 +15,6 @@ export async function submitClip(category: string, url: string, caption: string,
   if (!me) return { ok: false, error: "Log in to submit a clip." };
   if (category !== "gotw" && category !== "notw") return { ok: false, error: "Pick a category." };
   const w = windowState();
-  if (!w.submissionsOpen) return { ok: false, error: "Submissions are closed on Sunday — voting day. Come back Monday." };
   const parsed = parseClipUrl(url);
   if (!parsed) {
     return {
@@ -46,7 +45,8 @@ export async function voteClip(clipId: string): Promise<Result> {
     submitted_by: string;
   }[];
   if (!clip) return { ok: false, error: "Clip not found." };
-  if (clip.week_key !== windowState().key) return { ok: false, error: "Voting for that week is closed." };
+  const w = windowState();
+  if (!w.votingKey || clip.week_key !== w.votingKey) return { ok: false, error: "Voting only happens on Monday, for last week's clips." };
   if (clip.submitted_by === me.id) return { ok: false, error: "You can't vote for your own clip." };
   await sql`INSERT INTO clip_votes (week_key, category, voter_id, clip_id) VALUES (${clip.week_key}, ${clip.category}, ${me.id}, ${clip.id})
             ON CONFLICT (week_key, category, voter_id) DO UPDATE SET clip_id = excluded.clip_id, created_at = now()`;
@@ -59,7 +59,7 @@ export async function removeClip(clipId: string): Promise<Result> {
   if (!me) return { ok: false, error: "Log in first." };
   const sql = db();
   if (me.role === "admin") await sql`DELETE FROM clips WHERE id = ${clipId}`;
-  else await sql`DELETE FROM clips WHERE id = ${clipId} AND submitted_by = ${me.id}`;
+  else await sql`DELETE FROM clips WHERE id = ${clipId} AND submitted_by = ${me.id} AND week_key = ${windowState().key}`;
   revalidatePath("/showdown");
   return { ok: true };
 }

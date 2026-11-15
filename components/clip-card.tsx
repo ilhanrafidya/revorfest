@@ -65,12 +65,14 @@ export function ClipCard({
   meId,
   isAdmin,
   votingOpen,
+  removable = false,
 }: {
   clip: ClipCardData;
   category: "gotw" | "notw";
   meId: string | null;
   isAdmin: boolean;
   votingOpen: boolean;
+  removable?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +120,7 @@ export function ClipCard({
           )}
           {own && <span className="text-xs text-mute">Your clip</span>}
           {clip.votes != null && <span className="text-sm font-semibold tabular-nums">{clip.votes} votes</span>}
-          {(own || isAdmin) && votingOpen && (
+          {(isAdmin || (own && removable)) && (
             <button
               type="button"
               disabled={pending}

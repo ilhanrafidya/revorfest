@@ -15,7 +15,7 @@ export function ClipArchive({ kind, items }: { kind: "gotw" | "notw"; items: Win
         <h1 className="text-display mt-3 text-5xl md:text-7xl">{fame ? "Hall of Fame." : "Wall of Shame."}</h1>
       </Reveal>
       {items.length === 0 ? (
-        <div className="tile mt-10 p-8 text-center text-mute">No winners yet — the first one is crowned when this week ends.</div>
+        <div className="tile mt-10 p-8 text-center text-mute">No winners yet — the first one is crowned after Monday’s vote.</div>
       ) : (
         <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {items.map((w, i) => (
