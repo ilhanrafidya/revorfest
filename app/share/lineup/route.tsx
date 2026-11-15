@@ -60,7 +60,6 @@ export async function GET(req: Request) {
           );
         })}
       </div>
-      <div style={{ display: "flex", marginTop: "auto", marginBottom: 30, fontSize: 30, color: C.mute }}>{"#WeAreRevorfest"}</div>
     </Frame>,
   );
 }

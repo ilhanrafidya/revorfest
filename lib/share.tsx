@@ -90,7 +90,7 @@ export function Frame({
       </div>
       <div style={{ display: "flex", marginTop: 26, fontSize: 30, letterSpacing: 7, fontWeight: 700, color: accent }}>{eyebrow}</div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, width: "100%" }}>{children}</div>
-      <div style={{ display: "flex", fontSize: 26, color: C.dim, letterSpacing: 2 }}>{"revorfest.vercel.app"}</div>
+      <div style={{ display: "flex", fontSize: 30, fontWeight: 700, color: C.mute, letterSpacing: 1 }}>{"#WeAreRevorfest"}</div>
     </div>
   );
 }
