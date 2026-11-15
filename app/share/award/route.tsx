@@ -6,7 +6,7 @@ import { Avatar, C, Frame, Stat, asset, avatarData, story } from "@/lib/share";
 const META = {
   pots: { eyebrow: "PLAYER OF THE SEASON", glow: "rgba(221,177,104,0.42)" },
   boot: { eyebrow: "GOLDEN BOOT", glow: "rgba(221,177,104,0.36)" },
-  assist: { eyebrow: "TOP ASSIST", glow: "rgba(221,177,104,0.36)" },
+  assist: { eyebrow: "PLAYMAKER", glow: "rgba(221,177,104,0.36)" },
 } as const;
 
 /** One season award, one player — only once the EA season has finished. */

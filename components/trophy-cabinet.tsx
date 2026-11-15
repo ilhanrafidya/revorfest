@@ -26,7 +26,7 @@ const TONE: Tone = {
 const SEASON = {
   pots: { title: "Player of the Season", icon: "crown" },
   boot: { title: "Golden Boot", icon: "boot" },
-  assist: { title: "Top Assist", icon: "assist" },
+  assist: { title: "Playmaker", icon: "assist" },
 } as const;
 
 export function TrophyCabinet({
@@ -86,7 +86,7 @@ export function TrophyCabinet({
   const ORDER: { group: string; title: string }[] = [
     { group: "pots", title: "Player of the Season" },
     { group: "boot", title: "Golden Boot" },
-    { group: "assist", title: "Top Assist" },
+    { group: "assist", title: "Playmaker" },
     { group: "potw", title: "Player of the Week" },
     { group: "hattrick", title: "Hattricks this week" },
     { group: "milestone", title: "Career milestones" },

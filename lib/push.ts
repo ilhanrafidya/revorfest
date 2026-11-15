@@ -3,6 +3,7 @@ import { seasonWinners } from "./awards";
 import { db, ensureSchema } from "./db";
 import { pickHonors, rangeTable, weekKey, weekLabel, weekStart } from "./honors";
 import { finishedSeasons } from "./seasons";
+import { clipCounts, windowState } from "./clips";
 import { sendPush, type PushSub } from "./webpush";
 
 export type PushMsg = { title: string; body: string; url: string; tag: string };
@@ -68,6 +69,16 @@ async function claim(kind: string, value: string): Promise<"claimed" | "seeded" 
   return moved.length ? "claimed" : "done";
 }
 
+/** Like claim(), but the very first value counts as new (used for things that only ever happen going forward). */
+async function claimFresh(kind: string, value: string) {
+  const rows = (await db()`
+    INSERT INTO ea_state (kind, data, fetched_at) VALUES (${kind}, ${JSON.stringify({ v: value })}::jsonb, now())
+    ON CONFLICT (kind) DO UPDATE SET data = EXCLUDED.data, fetched_at = now()
+    WHERE ea_state.data->>'v' IS DISTINCT FROM ${value}
+    RETURNING kind`) as unknown[];
+  return rows.length > 0;
+}
+
 /** Called after every EA sync: announces last week's POTW / Player of the Weak and finished-season awards once. */
 export async function announcePending() {
   if (!vapid()) return;
@@ -104,6 +115,24 @@ export async function announcePending() {
     }
   }
 
+  // Showdown voting — Monday from 12:00 WIB, once, only if clips were submitted.
+  const w = windowState();
+  const wibHour = new Date(Date.now() + 7 * 3600000).getUTCHours();
+  if (w.votingKey && wibHour >= 12) {
+    const counts = await clipCounts(w.votingKey);
+    const total = counts.gotw + counts.notw;
+    if (total > 0 && (await claimFresh("announced_vote", w.votingKey))) {
+      const parts = [counts.gotw ? `${counts.gotw} goal${counts.gotw > 1 ? "s" : ""}` : "", counts.notw ? `${counts.notw} blunder${counts.notw > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+      await notify(() => ({
+        title: "🗳️ Voting is open",
+        body: `Goal of the Week & Nyunda of the Week · ${parts}. Closes tonight 23:59.`,
+        url: "/showdown",
+        tag: `vote-${w.votingKey}`,
+      }));
+      out.push("vote");
+    }
+  }
+
   // Season awards — once per finished EA season.
   const season = finishedSeasons()[0];
   if (season && (await claim("announced_season", String(season.n))) === "claimed") {
@@ -111,7 +140,7 @@ export async function announcePending() {
     const awards = [
       w.pots && { who: w.pots, title: `👑 Player of ${season.name}`, other: `${w.pots.name} is Player of ${season.name} · ${w.pots.avgRating.toFixed(1)} avg`, me: `You're Player of ${season.name}, ${w.pots.name}! 👑` },
       w.boot && { who: w.boot, title: "⚽ Golden Boot", other: `${w.boot.name} wins the ${season.name} Golden Boot · ${w.boot.goals} goals`, me: `Golden Boot is yours, ${w.boot.name}! ${w.boot.goals} goals in ${season.name}` },
-      w.assist && { who: w.assist, title: "🎯 Top Assist", other: `${w.assist.name} tops ${season.name} assists · ${w.assist.assists} assists`, me: `You top the ${season.name} assists, ${w.assist.name}! ${w.assist.assists} assists` },
+      w.assist && { who: w.assist, title: "🎯 Playmaker", other: `${w.assist.name} is ${season.name} Playmaker · ${w.assist.assists} assists`, me: `You're the ${season.name} Playmaker, ${w.assist.name}! ${w.assist.assists} assists` },
     ].filter(Boolean) as { who: { playerId: string | null }; title: string; other: string; me: string }[];
     for (const [i, a] of awards.entries()) {
       await notify((pid) => ({ title: a.title, body: pid === a.who.playerId ? a.me : a.other, url: "/stats", tag: `season-${season.n}-${i}` }));

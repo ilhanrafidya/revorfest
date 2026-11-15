@@ -17,6 +17,22 @@ export function PushPrompt({ publicKey }: { publicKey: string | null }) {
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState(false);
 
+  // Opening (or returning to) the app clears all Revorfest notifications from the notification centre.
+  useEffect(() => {
+    if (!pushSupported()) return;
+    const clear = () =>
+      navigator.serviceWorker
+        .getRegistration("/")
+        .then((reg) => reg?.getNotifications())
+        .then((list) => list?.forEach((n) => n.close()))
+        .catch(() => null);
+    clear();
+    (navigator as Navigator & { clearAppBadge?: () => Promise<void> }).clearAppBadge?.().catch(() => null);
+    const onVis = () => document.visibilityState === "visible" && clear();
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
   useEffect(() => {
     if (!publicKey) return;
     let snoozed = false;

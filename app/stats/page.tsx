@@ -65,7 +65,7 @@ export default async function StatsPage() {
           {[
             { k: "Player of the Season", l: race.pots, v: race.pots ? `${race.pots.avgRating.toFixed(1)} avg · ${race.pots.matches} MP` : `Needs ${MIN_SEASON_MATCHES}+ matches` },
             { k: "Golden Boot", l: race.boot, v: race.boot ? `${race.boot.goals} goals` : "No goals yet" },
-            { k: "Top Assist", l: race.assist, v: race.assist ? `${race.assist.assists} assists` : "No assists yet" },
+            { k: "Playmaker", l: race.assist, v: race.assist ? `${race.assist.assists} assists` : "No assists yet" },
           ].map((x) => (
             <div key={x.k} className="tile p-5 ring-1 ring-gold/20">
               <p className="text-sm font-semibold text-gold">{x.k}</p>
@@ -95,7 +95,7 @@ export default async function StatsPage() {
             {[
               { kind: "pots", k: "Player of the Season", l: lastWinners.pots, v: lastWinners.pots ? `${lastWinners.pots.avgRating.toFixed(1)} avg rating` : "" },
               { kind: "boot", k: "Golden Boot", l: lastWinners.boot, v: lastWinners.boot ? `${lastWinners.boot.goals} goals` : "" },
-              { kind: "assist", k: "Top Assist", l: lastWinners.assist, v: lastWinners.assist ? `${lastWinners.assist.assists} assists` : "" },
+              { kind: "assist", k: "Playmaker", l: lastWinners.assist, v: lastWinners.assist ? `${lastWinners.assist.assists} assists` : "" },
             ].map((x) =>
               x.l ? (
                 <div key={x.kind} className="tile p-5 ring-1 ring-gold/30">
@@ -138,8 +138,8 @@ export default async function StatsPage() {
           <Empty>Leaderboards appear after the first successful EA sync.</Empty>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4">
-            <Board title="Golden Boot" unit="goals" rows={boards.goals} value={(m) => m.goals} />
-            <Board title="Playmaker" unit="assists" rows={boards.assists} value={(m) => m.assists} />
+            <Board title="Top Scorer" unit="goals" rows={boards.goals} value={(m) => m.goals} />
+            <Board title="Top Assist" unit="assists" rows={boards.assists} value={(m) => m.assists} />
             <Board title="Brick wall" unit="clean sheets" rows={boards.cleanSheets} value={(m) => m.cleanSheets} />
             <Board title="MVP" unit="avg rating" rows={boards.mvp} value={(m) => m.ratingAve} decimals={1} />
           </div>

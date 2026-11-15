@@ -334,7 +334,7 @@ export async function Overview() {
           <TiltCard className="p-5">
             <div className="flex h-full flex-col justify-between gap-6">
               <div>
-                <p className="eyebrow">Top Assist</p>
+                <p className="eyebrow">Playmaker</p>
                 <p className="mt-1 text-[11px] text-mute">Ends {seasonInfo.ends}</p>
               </div>
               <div>

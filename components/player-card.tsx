@@ -22,7 +22,7 @@ export type CardData = {
 const AWARD: Record<SeasonAward["kind"], { label: string; icon: string }> = {
   pots: { label: "Player of the Season", icon: "crown" },
   boot: { label: "Golden Boot", icon: "boot" },
-  assist: { label: "Top Assist", icon: "assist" },
+  assist: { label: "Playmaker", icon: "assist" },
 };
 
 export function AwardIcon({ kind, className = "size-3.5" }: { kind: string; className?: string }) {

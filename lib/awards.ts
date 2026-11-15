@@ -12,7 +12,7 @@ export type PlayerAwards = { potw: number; weak: number; potwWeeks: string[]; we
 export const SEASON_AWARD_LABEL: Record<SeasonAwardKind, string> = {
   pots: "Player of the Season",
   boot: "Golden Boot",
-  assist: "Top Assist",
+  assist: "Playmaker",
 };
 
 /** Winners for one finished EA season. */

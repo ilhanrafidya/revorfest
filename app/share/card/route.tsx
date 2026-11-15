@@ -2,7 +2,7 @@ import { cardFor } from "@/lib/card";
 import { getPlayerBySlug } from "@/lib/players";
 import { C, Frame, asset, avatarData, story } from "@/lib/share";
 
-const AWARD = { pots: "Player of the Season", boot: "Golden Boot", assist: "Top Assist" } as const;
+const AWARD = { pots: "Player of the Season", boot: "Golden Boot", assist: "Playmaker" } as const;
 
 export async function GET(req: Request) {
   const slug = new URL(req.url).searchParams.get("slug") ?? "";
