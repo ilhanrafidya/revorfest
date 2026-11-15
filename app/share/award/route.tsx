@@ -15,8 +15,10 @@ export async function GET(req: Request) {
   const kind = (["pots", "boot", "assist"] as const).find((k) => k === u.searchParams.get("kind"));
   const season = seasonByNumber(Number(u.searchParams.get("season")));
   if (!kind || !season) return new Response("Bad request", { status: 400 });
-  if (season.end > new Date()) return new Response("Season still running", { status: 404 });
-  const w = seasonWinners(await rangeTable(season.start, season.end));
+  // ?preview=1 renders a running season so far (internal QA only — the UI never links it)
+  const preview = u.searchParams.get("preview") === "1";
+  if (season.end > new Date() && !preview) return new Response("Season still running", { status: 404 });
+  const w = seasonWinners(await rangeTable(season.start, season.end > new Date() ? new Date() : season.end));
   const l = w[kind];
   if (!l) return new Response("No winner", { status: 404 });
   const [crest, av] = await Promise.all([asset(req, "/brand/crest.png"), avatarData(l.playerId)]);

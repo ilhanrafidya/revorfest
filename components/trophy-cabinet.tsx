@@ -64,7 +64,9 @@ export function TrophyCabinet({
       url: `/share/hattrick?match=${h.matchId}&tag=${encodeURIComponent(h.gamertag)}`,
       file: `revorfest-hattrick-${h.matchId}.png`,
     });
-  for (const m of milestones)
+  // only the highest milestone per stat — the lower ones are implied
+  const top = milestones.filter((m, i) => milestones.findIndex((x) => x.stat === m.stat) === i);
+  for (const m of top)
     items.push({
       key: `m-${m.stat}-${m.n}`,
       tone: "blue",
