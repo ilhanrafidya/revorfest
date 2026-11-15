@@ -83,6 +83,23 @@ def main():
             print(f"[{key}] ok")
         time.sleep(0.8)
 
+    # log the division-related fields EA sends (helps map Div 5…1 / Elite correctly)
+    def div_fields(x):
+        out = {}
+        items = x if isinstance(x, list) else [x]
+        for it in items[:3]:
+            if isinstance(it, dict):
+                for k, v in it.items():
+                    if any(w in k.lower() for w in ("div", "skill", "rank", "promotion", "league", "points", "season")) and not isinstance(v, (dict, list)):
+                        out[k] = v
+        return out
+    for key in ("overall", "leaderboard", "info"):
+        if key in fetched:
+            data = fetched[key]
+            if key == "info" and isinstance(data, dict):
+                data = list(data.values())
+            print(f"[{key} division fields]", json.dumps(div_fields(data))[:800])
+
     payload = {
         "source": "github-actions" if os.environ.get("GITHUB_ACTIONS") else "manual",
         "fetched": fetched,
