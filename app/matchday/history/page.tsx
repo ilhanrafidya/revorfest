@@ -164,7 +164,7 @@ export default async function MatchdayHistory() {
                    </div>
                  )}
                  <div className="flex items-center">
-                  <div className="flex items-center gap-5 pr-12 md:w-56 md:shrink-0 md:pr-0">
+                  <div className="flex items-center gap-5 pr-12">
                     <div className="text-center">
                       <p className="text-display text-5xl leading-none tabular-nums">{p.day}</p>
                       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-accent">{p.month}</p>
