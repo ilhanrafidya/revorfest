@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { submitClip } from "@/app/actions/showdown";
 import { parseClipUrl } from "@/lib/clip-url";
-import { MAX_CLIP_SEC, canTrim, trimClip } from "@/lib/trim-clip";
+import { MAX_CLIP_SEC, QUALITY_LADDER, canTrim, trimClip } from "@/lib/trim-clip";
 import { ClipTrimmer } from "./clip-trimmer";
 import { Button, ErrorText, Field, Input } from "./ui";
 
 const MAX_UPLOAD = 4_300_000;
+const TARGET = 3_200_000; // aim for ~2–3 MB: light on storage and on everyone’s data
 
 export function SubmitClip({ category, players }: { category: "gotw" | "notw"; players: { id: string; name: string; number: number }[] }) {
   const router = useRouter();
@@ -55,15 +56,21 @@ export function SubmitClip({ category, players }: { category: "gotw" | "notw"; p
       let poster: File | null = null;
       if (canTrim()) {
         setStage("trimming");
-        const r = await trimClip(src, range.current.start, range.current.end, setProgress);
-        video = r.video;
-        poster = r.poster;
+        let best: Awaited<ReturnType<typeof trimClip>> | null = null;
+        for (const q of QUALITY_LADDER) {
+          setProgress(0);
+          const r = await trimClip(src, range.current.start, range.current.end, setProgress, q);
+          if (!best || r.video.size < best.video.size) best = { video: r.video, poster: best?.poster ?? r.poster };
+          if (r.video.size <= TARGET) break; // small enough — done
+        }
+        video = best!.video;
+        poster = best!.poster;
       } else {
         // very old browsers: send the original if it's already small enough
         const raw = await fetch(src).then((x) => x.blob());
         video = new File([raw], "clip.mp4", { type: raw.type || "video/mp4" });
       }
-      if (video.size > MAX_UPLOAD) throw new Error("Still too big after trimming — pick a shorter part.");
+      if (video.size > MAX_UPLOAD) throw new Error("Still too big — pick a shorter part.");
       setStage("uploading");
       const fd = new FormData();
       fd.set("video", video);
@@ -175,7 +182,7 @@ export function SubmitClip({ category, players }: { category: "gotw" | "notw"; p
           <div className="h-2 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${stage === "uploading" ? 100 : Math.round(progress * 100)}%` }} />
           </div>
-          <p className="mt-2 text-xs text-mute">{stage === "trimming" ? "Trimming on your phone… keep the app open" : "Uploading…"}</p>
+          <p className="mt-2 text-xs text-mute">{stage === "trimming" ? "Trimming &amp; compressing on your phone… keep the app open" : "Uploading…"}</p>
         </div>
       )}
       <ErrorText>{error}</ErrorText>

@@ -26,7 +26,12 @@ export function ClipPlayer({ provider, embedId, url, tone = "gotw" }: { provider
   const tall = provider === "tiktok";
   return (
     <div className={`relative w-full overflow-hidden rounded-2xl bg-black ${tall ? "aspect-[9/16] max-h-[560px]" : "aspect-video"}`}>
-      {playing && provider === "upload" && url ? (
+      {provider === "upload" && !url ? (
+        <div className="absolute inset-0 grid place-items-center">
+          {thumb && <img src={thumb} alt="" className="absolute inset-0 size-full object-cover opacity-50" />}
+          <span className="relative rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-mute">Video archived after the season</span>
+        </div>
+      ) : playing && provider === "upload" && url ? (
         <video src={url} poster={thumb ?? undefined} className="absolute inset-0 size-full object-contain" autoPlay playsInline controls />
       ) : playing ? (
         <iframe

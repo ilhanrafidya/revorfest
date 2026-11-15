@@ -1,6 +1,7 @@
 import { FormStrip, Reveal, Ticker, TiltCard, WinRing } from "./motion-primitives";
 import { CurrentKitChip } from "./kit-showcase";
 import { PlayFilled } from "./icons";
+import { HomeClipTile } from "./home-clip-tile";
 import { club as demo, gotw, nextMatchday, potw as demoPotw, topAssist as demoAssist, topScorer as demoScorer, wpotw as demoWpotw } from "@/lib/mock";
 import { PlayerAvatar } from "./player-avatar";
 import { clubOverall, lastSync, recentMatches } from "@/lib/stats";
@@ -350,6 +351,15 @@ export async function Overview() {
 
         {/* GOTW clip */}
         <Reveal className="col-span-2">
+          {extras?.gotw ? (
+            <HomeClipTile
+              provider={extras.gotw.provider}
+              embedId={extras.gotw.embedId}
+              url={extras.gotw.url}
+              title={`“${extras.gotw.caption ?? "Worldie"}”`}
+              sub={`${extras.gotw.featuring?.name ?? extras.gotw.submitter.name} · ${extras.gotw.votes} votes`}
+            />
+          ) : (
           <Link href="/showdown" className="block h-full">
           <TiltCard className="p-0">
             <div className="flex h-full min-h-[180px] flex-col justify-end">
@@ -382,6 +392,7 @@ export async function Overview() {
             </div>
           </TiltCard>
           </Link>
+          )}
         </Reveal>
 
         {/* WPOTW */}

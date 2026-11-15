@@ -2,6 +2,8 @@ import "server-only";
 import { del, put } from "@vercel/blob";
 import { db, ensureSchema } from "./db";
 import { windowState } from "./clips";
+import { weekKey, weekStart } from "./honors";
+import { seasonAt } from "./seasons";
 
 /** Uploads a trimmed clip (+ poster) to Vercel Blob. Auth is automatic on Vercel (OIDC + BLOB_STORE_ID). */
 export async function storeClip(weekKey: string, video: File, poster: File | null) {
@@ -52,5 +54,13 @@ export async function cleanupLosingUploads() {
     await deleteStored([l.url, l.embed_id]);
     await db()`DELETE FROM clips WHERE id = ${l.id}`;
   }
-  return losers.length;
+
+  // Winners keep their video for one EA season. After that only the poster stays (trophies + names are untouched).
+  const cutoff = weekKey(weekStart(seasonAt().start));
+  const old = (await db()`SELECT id, url FROM clips WHERE provider = 'upload' AND url <> '' AND week_key < ${cutoff}`) as { id: string; url: string }[];
+  for (const o of old) {
+    await deleteStored([o.url]);
+    await db()`UPDATE clips SET url = '' WHERE id = ${o.id}`;
+  }
+  return losers.length + old.length;
 }

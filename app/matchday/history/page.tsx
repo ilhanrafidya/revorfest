@@ -41,23 +41,26 @@ function RecapBlock({ r, lineup }: { r: Recap | null; lineup: ReactNode }) {
   return (
     <div className="mt-4 space-y-2">
       {has && r && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-white/[0.04] px-3 py-2.5">
-          <div className="flex items-center gap-1 text-xs font-semibold tabular-nums">
-            <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">{r.record.W}W</span>
-            <span className="rounded-full bg-white/[0.08] px-2 py-0.5">{r.record.D}D</span>
-            <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{r.record.L}L</span>
-          </div>
-          <span className="text-xs text-mute tabular-nums">
-            {r.record.gf}:{r.record.ga} · {r.matches.length} MP
-          </span>
-          {a?.mvp && (
-            <span className="ml-auto flex min-w-0 items-center gap-2">
-              <Face src={a.mvp.avatar} name={a.mvp.name} size={24} gold />
-              <span className="truncate text-xs font-semibold">
-                <span className="text-[#DDB168]">MVP</span> {a.mvp.name}
-              </span>
-              <span className="text-xs font-semibold tabular-nums text-[#DDB168]">{a.mvp.avgRating.toFixed(1)}</span>
+        <div className="rounded-2xl bg-white/[0.04] px-3">
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <div className="flex items-center gap-1 text-xs font-semibold tabular-nums">
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">{r.record.W}W</span>
+              <span className="rounded-full bg-white/[0.08] px-2 py-0.5">{r.record.D}D</span>
+              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{r.record.L}L</span>
+            </div>
+            <span className="text-xs text-mute tabular-nums">
+              {r.record.gf}:{r.record.ga} · {r.matches.length} MP
             </span>
+          </div>
+          {a?.mvp && (
+            <div className="flex items-center gap-2.5 border-t border-white/[0.06] py-2.5">
+              <Face src={a.mvp.avatar} name={a.mvp.name} size={28} gold />
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                <span className="mr-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#DDB168]">MVP</span>
+                {a.mvp.name}
+              </span>
+              <span className="text-sm font-semibold tabular-nums text-[#DDB168]">{a.mvp.avgRating.toFixed(1)}</span>
+            </div>
           )}
         </div>
       )}

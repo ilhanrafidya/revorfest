@@ -1,4 +1,4 @@
-// Trims + compresses a video in the browser: plays the chosen window once onto a 720p canvas and records it
+// Trims + compresses a video in the browser: plays the chosen window onto a ~540p canvas (smaller on retry) and records it
 // (MediaRecorder) with its audio routed through Web Audio. Works in Safari (MP4) and Chrome (MP4/WebM).
 
 export const MAX_CLIP_SEC = 15;
@@ -20,8 +20,16 @@ function fit(w: number, h: number, long = 1280) {
 }
 
 export type TrimResult = { video: File; poster: File | null };
+export type TrimQuality = { long: number; bps: number; fps: number };
 
-export async function trimClip(src: string, start: number, end: number, onProgress: (p: number) => void): Promise<TrimResult> {
+/** Tried in order until the file is small enough. Safari can ignore the bitrate hint, but never the canvas size. */
+export const QUALITY_LADDER: TrimQuality[] = [
+  { long: 960, bps: 1_100_000, fps: 30 }, // ~540p
+  { long: 854, bps: 800_000, fps: 24 }, // ~480p
+  { long: 640, bps: 550_000, fps: 24 }, // ~360p
+];
+
+export async function trimClip(src: string, start: number, end: number, onProgress: (p: number) => void, q: TrimQuality = QUALITY_LADDER[0]): Promise<TrimResult> {
   const v = document.createElement("video");
   v.src = src;
   v.playsInline = true;
@@ -31,7 +39,7 @@ export async function trimClip(src: string, start: number, end: number, onProgre
     v.onloadedmetadata = () => res();
     v.onerror = () => rej(new Error("Can't read this video."));
   });
-  const { w, h } = fit(v.videoWidth || 1280, v.videoHeight || 720);
+  const { w, h } = fit(v.videoWidth || 1280, v.videoHeight || 720, q.long);
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
@@ -51,7 +59,7 @@ export async function trimClip(src: string, start: number, end: number, onProgre
   });
 
   // video track from the canvas, audio via Web Audio (Safari has no HTMLMediaElement.captureStream)
-  const stream = canvas.captureStream(30);
+  const stream = canvas.captureStream(q.fps);
   let audioCtx: AudioContext | null = null;
   try {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -65,7 +73,7 @@ export async function trimClip(src: string, start: number, end: number, onProgre
   }
 
   const mime = pickMime();
-  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1_600_000, audioBitsPerSecond: 96_000 });
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: q.bps, audioBitsPerSecond: 80_000 });
   const chunks: Blob[] = [];
   rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
   const stopped = new Promise<void>((res) => (rec.onstop = () => res()));
