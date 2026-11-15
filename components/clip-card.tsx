@@ -32,7 +32,7 @@ export function ClipPlayer({ provider, embedId, url, tone = "gotw" }: { provider
           <span className="relative rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-mute">Video archived after the season</span>
         </div>
       ) : playing && provider === "upload" && url ? (
-        <video src={url} poster={thumb ?? undefined} className="absolute inset-0 size-full object-contain" autoPlay playsInline controls />
+        <video src={url} poster={thumb ?? undefined} className="fade-up-in absolute inset-0 size-full object-contain" autoPlay playsInline controls />
       ) : playing ? (
         <iframe
           src={embedUrl(provider, embedId)}

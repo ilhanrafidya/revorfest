@@ -27,11 +27,11 @@ export function HomeClipTile({
     <div className="tile relative h-full min-h-[200px] overflow-hidden">
       {playing ? (
         provider === "upload" ? (
-          <video src={url} poster={thumb ?? undefined} className="absolute inset-0 size-full bg-black object-contain" autoPlay playsInline controls />
+          <video src={url} poster={thumb ?? undefined} className="fade-up-in absolute inset-0 size-full bg-black object-contain" autoPlay playsInline controls />
         ) : (
           <iframe
             src={embedUrl(provider, embedId)}
-            className="absolute inset-0 size-full"
+            className="fade-up-in absolute inset-0 size-full"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
             title="Goal of the Week"
@@ -41,7 +41,7 @@ export function HomeClipTile({
         <>
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumb} alt="" className="pointer-events-none absolute inset-0 size-full object-cover" />
+            <img src={thumb} alt="" className="ken-burns pointer-events-none absolute inset-0 size-full object-cover" />
           ) : (
             <div
               aria-hidden
@@ -56,7 +56,7 @@ export function HomeClipTile({
               type="button"
               onClick={() => setPlaying(true)}
               aria-label="Play Goal of the Week"
-              className="glass hairline absolute right-5 top-5 z-10 grid size-12 place-items-center rounded-full transition active:scale-95"
+              className="soft-ping glass hairline absolute right-5 top-5 z-10 grid size-12 place-items-center rounded-full transition hover:scale-105 active:scale-95"
             >
               <PlayFilled className="size-5" />
             </button>

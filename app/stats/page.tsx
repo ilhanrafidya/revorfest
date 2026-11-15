@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Reveal } from "@/components/motion-primitives";
+import { Reveal, Ticker } from "@/components/motion-primitives";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ShareButton } from "@/components/share-button";
 import { ResultPill, WhoLink } from "@/components/stat-bits";
@@ -73,18 +73,25 @@ export default async function StatsPage() {
                 <p className="truncate text-base font-semibold">{prev.label}</p>
               </div>
             </div>
-            <div className="mt-5 grid grid-cols-4 border-y border-white/[0.06] py-4 text-center">
+            <div className="mt-5 grid grid-cols-[1fr_1fr_1fr_1.45fr] border-y border-white/[0.06] py-4 text-center">
               {[
-                { k: "Wins", v: String(wk.w), c: "text-accent" },
-                { k: "Draws", v: String(wk.d), c: "" },
-                { k: "Losses", v: String(wk.l), c: "text-red-400" },
-                { k: "Goals", v: `${wk.gf}:${wk.ga}`, c: "" },
+                { k: "Wins", v: wk.w, c: "text-accent" },
+                { k: "Draws", v: wk.d, c: "" },
+                { k: "Losses", v: wk.l, c: "text-red-400" },
               ].map((x) => (
                 <div key={x.k}>
-                  <p className={`text-display text-3xl tabular-nums ${x.c}`}>{x.v}</p>
+                  <Ticker value={x.v} className={`text-display block text-3xl ${x.c}`} />
                   <p className="mt-1 text-[11px] text-mute">{x.k}</p>
                 </div>
               ))}
+              <div className="border-l border-white/[0.06]">
+                <p className="text-display text-3xl tabular-nums">
+                  <Ticker value={wk.gf} />
+                  <span className="text-mute">:</span>
+                  <Ticker value={wk.ga} />
+                </p>
+                <p className="mt-1 text-[11px] text-mute">Goals</p>
+              </div>
             </div>
             <ShareButton
               url={`/share/week?week=${prev.key}`}

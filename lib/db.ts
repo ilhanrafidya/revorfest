@@ -146,10 +146,14 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS push_subs_player ON push_subs (player_id)`,
   // v7 — when "Full time" was pressed (matchday recap window)
   `ALTER TABLE matchdays ADD COLUMN IF NOT EXISTS ended_at timestamptz`,
+  // v8 — one-off fix: Namcuy signed up with the wrong EA gamertag
+  `UPDATE players SET ea_gamertag = 'MikahNmkl777'
+     WHERE lower(display_name) = 'namcuy' AND lower(ea_gamertag) <> 'mikahnmkl777'
+       AND NOT EXISTS (SELECT 1 FROM players o WHERE lower(o.ea_gamertag) = 'mikahnmkl777')`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 let ready: Promise<void> | null = null;
 

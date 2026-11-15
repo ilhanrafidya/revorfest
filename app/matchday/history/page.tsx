@@ -53,7 +53,7 @@ function RecapBlock({ r, lineup }: { r: Recap | null; lineup: ReactNode }) {
             </span>
           </div>
           {a?.mvp && (
-            <div className="flex items-center gap-2.5 border-t border-white/[0.06] py-2.5">
+            <div className="gold-sheen -mx-3 flex items-center gap-2.5 border-t border-white/[0.06] px-3 py-2.5">
               <Face src={a.mvp.avatar} name={a.mvp.name} size={28} gold />
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">
                 <span className="mr-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#DDB168]">MVP</span>
@@ -74,7 +74,7 @@ function RecapBlock({ r, lineup }: { r: Recap | null; lineup: ReactNode }) {
             <path d="m6 9 6 6 6-6" />
           </svg>
         </summary>
-        <div className="space-y-3 pt-2">
+        <div className="fold space-y-3 pt-2">
           {rows.length > 0 && (
             <ul className="divide-y divide-white/[0.05] rounded-2xl bg-white/[0.03] px-3 text-sm">
               {rows.map((x) => (
