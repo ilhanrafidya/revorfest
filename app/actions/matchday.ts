@@ -92,3 +92,10 @@ export async function clearLineup(matchdayId: string): Promise<Result> {
   await db()`DELETE FROM lineup_slots WHERE matchday_id = ${matchdayId}`;
   return done();
 }
+
+/** Permanently removes a finished matchday (lineup + attendance cascade). */
+export async function deleteMatchday(id: string): Promise<Result> {
+  if (!(await manager())) return { ok: false, error: "Only captains and admins can delete matchdays." };
+  await db()`DELETE FROM matchdays WHERE id = ${id} AND status = 'done'`;
+  return done();
+}

@@ -4,7 +4,9 @@ import { Reveal } from "@/components/motion-primitives";
 import { ShareButton } from "@/components/share-button";
 import { formationSlots } from "@/lib/formations";
 import { KITS } from "@/lib/kits";
-import { pastMatchdays } from "@/lib/matchday";
+import { canManage, pastMatchdays } from "@/lib/matchday";
+import { currentPlayer } from "@/lib/session";
+import { DeleteMatchday } from "@/components/delete-matchday";
 
 export const metadata: Metadata = { title: "Matchday history" };
 
@@ -15,7 +17,8 @@ function parts(iso: string) {
 }
 
 export default async function MatchdayHistory() {
-  const list = await pastMatchdays();
+  const [list, me] = await Promise.all([pastMatchdays(), currentPlayer()]);
+  const manage = canManage(me?.role);
   return (
     <section className="mx-auto max-w-4xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
       <Reveal blur className="px-1 pb-10">
@@ -69,12 +72,15 @@ export default async function MatchdayHistory() {
                       <p className="text-xs text-mute">No lineup was set.</p>
                     )}
                   </div>
-                  <ShareButton
-                    url={`/share/lineup?id=${md.id}`}
-                    filename={`revorfest-lineup-${md.scheduled_at.slice(0, 10)}.png`}
-                    title="Revorfest lineup"
-                    className="self-start bg-white/[0.06] md:self-center"
-                  />
+                  <div className="flex items-center gap-2 self-start md:self-center">
+                    <ShareButton
+                      url={`/share/lineup?id=${md.id}`}
+                      filename={`revorfest-lineup-${md.scheduled_at.slice(0, 10)}.png`}
+                      title="Revorfest lineup"
+                      className="bg-white/[0.06]"
+                    />
+                    {manage && <DeleteMatchday id={md.id} />}
+                  </div>
                 </li>
               </Reveal>
             );
