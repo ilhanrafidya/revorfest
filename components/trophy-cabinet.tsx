@@ -1,10 +1,10 @@
 import type { Hattrick, Milestone, PlayerAwards } from "@/lib/awards";
 import { MILESTONES } from "@/lib/awards";
 import { weekFromKey, weekLabel } from "@/lib/honors";
-import { AwardIcon } from "./player-card";
-import { ShareButton } from "./share-button";
+import { TrophyShelf, type Shelf } from "./trophy-shelf";
 
-type Item = {
+export type Item = {
+  group: string;
   key: string;
   tone: "gold" | "goldSolid" | "red" | "volt" | "blue";
   icon: string;
@@ -14,7 +14,8 @@ type Item = {
   file: string;
 };
 
-const TONE: Record<Item["tone"], { box: string; icon: string; btn: string }> = {
+export type Tone = Record<Item["tone"], { box: string; icon: string; btn: string }>;
+const TONE: Tone = {
   goldSolid: { box: "ring-1 ring-gold/50 bg-gold/[0.08]", icon: "bg-gold text-[#2b1d03]", btn: "bg-gold/20 text-gold" },
   gold: { box: "ring-1 ring-gold/25", icon: "bg-gold/15 text-gold", btn: "bg-gold/15 text-gold" },
   red: { box: "ring-1 ring-depleted/25", icon: "bg-depleted/15 text-[#FF6B61]", btn: "bg-depleted/15 text-[#FF6B61]" },
@@ -44,6 +45,7 @@ export function TrophyCabinet({
   const items: Item[] = [];
   for (const a of awards?.season ?? [])
     items.push({
+      group: a.kind,
       key: `s-${a.kind}-${a.n}`,
       tone: a.kind === "pots" ? "goldSolid" : "gold",
       icon: SEASON[a.kind].icon,
@@ -53,9 +55,10 @@ export function TrophyCabinet({
       file: `revorfest-${a.kind}-s${a.n}.png`,
     });
   for (const w of awards?.potwWeeks ?? [])
-    items.push({ key: `p-${w}`, tone: "gold", icon: "trophy", title: "Player of the Week", sub: weekLabel(weekFromKey(w)), url: `/share/honors?kind=potw&week=${w}`, file: `revorfest-potw-${w}.png` });
+    items.push({ group: "potw", key: `p-${w}`, tone: "gold", icon: "trophy", title: "Player of the Week", sub: weekLabel(weekFromKey(w)), url: `/share/honors?kind=potw&week=${w}`, file: `revorfest-potw-${w}.png` });
   for (const h of hattricks)
     items.push({
+      group: "hattrick",
       key: `h-${h.matchId}`,
       tone: "volt",
       icon: "boot",
@@ -68,6 +71,7 @@ export function TrophyCabinet({
   const top = milestones.filter((m, i) => milestones.findIndex((x) => x.stat === m.stat) === i);
   for (const m of top)
     items.push({
+      group: "milestone",
       key: `m-${m.stat}-${m.n}`,
       tone: "blue",
       icon: "trophy",
@@ -77,36 +81,21 @@ export function TrophyCabinet({
       file: `revorfest-${slug}-${m.n}-${m.stat}.png`,
     });
   for (const w of awards?.weakWeeks ?? [])
-    items.push({ key: `w-${w}`, tone: "red", icon: "sad", title: "Player of the Weak", sub: weekLabel(weekFromKey(w)), url: `/share/honors?kind=wpotw&week=${w}`, file: `revorfest-weak-${w}.png` });
+    items.push({ group: "weak", key: `w-${w}`, tone: "red", icon: "sad", title: "Player of the Weak", sub: weekLabel(weekFromKey(w)), url: `/share/honors?kind=wpotw&week=${w}`, file: `revorfest-weak-${w}.png` });
 
-  return (
-    <div>
-      <div className="mb-4 flex items-end justify-between px-1">
-        <div>
-          <p className="eyebrow">Trophy cabinet</p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{items.length ? `${items.length} to show off` : "Still empty"}</h2>
-        </div>
-      </div>
-      {items.length === 0 ? (
-        <p className="tile p-6 text-sm text-mute">
-          {name} hasn&apos;t won anything yet. Weekly awards, this week's hattricks, career milestones and EA season awards all land here — each with its own story to share.
-        </p>
-      ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {items.map((it) => (
-            <li key={it.key} className={`tile flex items-center gap-4 p-4 ${TONE[it.tone].box}`}>
-              <span className={`grid size-12 shrink-0 place-items-center rounded-full ${TONE[it.tone].icon}`}>
-                <AwardIcon kind={it.icon} className="size-6" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{it.title}</p>
-                <p className="truncate text-xs text-mute">{it.sub}</p>
-              </div>
-              <ShareButton url={it.url} filename={it.file} title={`Revorfest · ${it.title}`} label="Share" className={`shrink-0 px-3 ${TONE[it.tone].btn}`} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+  const ORDER: { group: string; title: string }[] = [
+    { group: "pots", title: "Player of the Season" },
+    { group: "boot", title: "Golden Boot" },
+    { group: "assist", title: "Top Assist" },
+    { group: "potw", title: "Player of the Week" },
+    { group: "hattrick", title: "Hattricks this week" },
+    { group: "milestone", title: "Career milestones" },
+    { group: "weak", title: "Player of the Weak" },
+  ];
+  const shelves = ORDER.map((o) => {
+    const list = items.filter((i) => i.group === o.group);
+    return list.length ? { ...o, tone: list[0].tone, icon: list[0].icon, items: list } : null;
+  }).filter(Boolean) as Shelf[];
+
+  return <TrophyShelf name={name} shelves={shelves} tones={TONE} />;
 }
