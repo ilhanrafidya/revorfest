@@ -18,14 +18,20 @@ export const C = {
 
 /** Fetches a file from our own /public as a data URI (Satori needs inline images). */
 export async function asset(req: Request, path: string) {
-  try {
-    const res = await fetch(new URL(path, req.url));
-    if (!res.ok) return null;
-    const type = res.headers.get("content-type") ?? "image/png";
-    return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
-  } catch {
-    return null;
+  // Per-deployment URLs sit behind Vercel auth (they'd return an HTML login page), so prefer the public production domain.
+  const prod = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const bases = [prod ? `https://${prod}` : null, req.url].filter(Boolean) as string[];
+  for (const base of bases) {
+    try {
+      const res = await fetch(new URL(path, base));
+      const type = res.headers.get("content-type") ?? "";
+      if (!res.ok || !type.startsWith("image/")) continue;
+      return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
+    } catch {
+      /* try next */
+    }
   }
+  return null;
 }
 
 export async function remoteImage(url: string | null) {
@@ -33,8 +39,8 @@ export async function remoteImage(url: string | null) {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
-    const type = res.headers.get("content-type") ?? "image/jpeg";
-    if (type.includes("webp")) return null;
+    const type = res.headers.get("content-type") ?? "";
+    if (!type.startsWith("image/") || type.includes("webp")) return null;
     return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
   } catch {
     return null;
