@@ -1,7 +1,51 @@
 import { FormStrip, Reveal, Ticker, TiltCard, WinRing } from "./motion-primitives";
 import { CurrentKitChip } from "./kit-showcase";
 import { PlayFilled } from "./icons";
-import { club, gotw, nextMatchday, potw, topAssist, topScorer, wpotw } from "@/lib/mock";
+import { club as demo, gotw, nextMatchday, potw as demoPotw, topAssist as demoAssist, topScorer as demoScorer, wpotw as demoWpotw } from "@/lib/mock";
+import { PlayerAvatar } from "./player-avatar";
+import { clubOverall, lastSync, leaderboards, recentMatches } from "@/lib/stats";
+import { honorsFor, weekStart } from "@/lib/honors";
+import { timeAgo } from "@/lib/format";
+
+async function loadOverview() {
+  try {
+    const thisWeek = weekStart();
+    const [overall, recent, boards, now, prev, sync] = await Promise.all([
+      clubOverall(),
+      recentMatches(5),
+      leaderboards(),
+      honorsFor(thisWeek),
+      honorsFor(new Date(thisWeek.getTime() - 7 * 86400000)),
+      lastSync(),
+    ]);
+    if (!overall) return null;
+    const last = recent[0];
+    const potwLine = prev.potw ?? now.potw;
+    const wpotwLine = prev.wpotw ?? now.wpotw;
+    return {
+      club: {
+        record: { w: overall.wins, d: overall.ties, l: overall.losses },
+        matches: overall.gamesPlayed,
+        goalsFor: overall.goals,
+        goalsAgainst: overall.goalsAgainst,
+        winRate: overall.gamesPlayed ? Math.round((overall.wins / overall.gamesPlayed) * 1000) / 10 : 0,
+        division: overall.currentDivision,
+        bestDivision: overall.bestDivision,
+        form: recent.map((m) => m.result).reverse(),
+        lastMatch: last ? { opponent: last.opponent_name ?? "Unknown", score: `${last.goals_for}–${last.goals_against}` } : null,
+      },
+      potw: potwLine
+        ? { name: potwLine.name, avatar: potwLine.avatar, number: potwLine.number, avgRating: potwLine.avgRating, goals: potwLine.goals, assists: potwLine.assists, matches: potwLine.matches, live: !prev.potw }
+        : null,
+      wpotw: wpotwLine ? { name: wpotwLine.name, avgRating: wpotwLine.avgRating, live: !prev.wpotw } : null,
+      scorer: boards.goals[0] ? { name: boards.goals[0].who.name, value: boards.goals[0].goals } : null,
+      assister: boards.assists[0] ? { name: boards.assists[0].who.name, value: boards.assists[0].assists } : null,
+      sync,
+    };
+  } catch {
+    return null;
+  }
+}
 
 function Initials({ name, className = "" }: { name: string; className?: string }) {
   return (
@@ -11,7 +55,19 @@ function Initials({ name, className = "" }: { name: string; className?: string }
   );
 }
 
-export function Overview() {
+export async function Overview() {
+  const real = await loadOverview();
+  const club = real?.club ?? {
+    ...demo,
+    division: 6,
+    bestDivision: 5,
+    lastMatch: demo.lastMatch,
+  };
+  const potw = real ? real.potw : { ...demoPotw, avatar: null, live: false };
+  const wpotw = real ? real.wpotw : { ...demoWpotw, live: false };
+  const scorer = real ? real.scorer : { name: demoScorer.name, value: demoScorer.goals };
+  const assister = real ? real.assister : { name: demoAssist.name, value: demoAssist.assists };
+  const sync = real?.sync ?? null;
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 md:px-6 md:pb-36">
       <Reveal blur className="px-1 pb-10 md:pb-14">
@@ -83,10 +139,16 @@ export function Overview() {
         <Reveal delay={0.1} className="col-span-1">
           <TiltCard className="p-5">
             <div className="flex h-full flex-col justify-between gap-6">
-              <p className="eyebrow">Skill rating</p>
+              <p className="eyebrow">Division</p>
               <div>
-                <Ticker value={club.skillRating} className="text-display block text-5xl" />
-                <p className="mt-2 text-sm text-accent transition-colors duration-700">{club.division}</p>
+                {club.division != null ? (
+                  <Ticker value={club.division} className="text-display block text-5xl" />
+                ) : (
+                  <span className="text-display block text-5xl text-mute">—</span>
+                )}
+                <p className="mt-2 text-sm text-accent transition-colors duration-700">
+                  {club.bestDivision != null ? `Best: Division ${club.bestDivision}` : "EA league"}
+                </p>
               </div>
             </div>
           </TiltCard>
@@ -98,11 +160,13 @@ export function Overview() {
             <div className="flex h-full flex-col justify-between gap-6">
               <div className="flex items-baseline justify-between">
                 <p className="eyebrow">Last 5</p>
-                <p className="text-sm text-mute">
-                  vs {club.lastMatch.opponent} <span className="font-semibold text-chalk">{club.lastMatch.score}</span>
-                </p>
+                {club.lastMatch && (
+                  <p className="truncate pl-3 text-sm text-mute">
+                    vs {club.lastMatch.opponent} <span className="font-semibold text-chalk">{club.lastMatch.score}</span>
+                  </p>
+                )}
               </div>
-              <FormStrip results={club.form} />
+              {club.form.length ? <FormStrip results={club.form} /> : <p className="text-sm text-mute">No matches synced yet.</p>}
             </div>
           </TiltCard>
         </Reveal>
@@ -120,37 +184,42 @@ export function Overview() {
             />
             <div className="relative flex h-full flex-col justify-between gap-8">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-gold">Player of the Week</p>
-                <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
-                  {potw.matches} matches
-                </span>
+                <p className="text-sm font-semibold text-gold">{potw?.live ? "Leading this week" : "Player of the Week"}</p>
+                {potw && (
+                  <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">{potw.matches} matches</span>
+                )}
               </div>
-              <div className="flex items-end gap-5">
-                <Initials
-                  name={potw.name}
-                  className="size-20 bg-linear-to-br from-gold to-[#8a6a22] text-2xl text-black md:size-24"
-                />
-                <div>
-                  <p className="text-display text-5xl md:text-6xl">{potw.name}</p>
-                  <p className="mt-2 text-sm text-mute">
-                    #{potw.number} · {potw.position}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4 border-t border-gold/15 pt-5">
-                <div>
-                  <Ticker value={potw.avgRating} decimals={1} className="text-3xl font-semibold text-gold" />
-                  <p className="mt-1 text-xs text-mute">Avg rating</p>
-                </div>
-                <div>
-                  <Ticker value={potw.goals} className="text-3xl font-semibold" />
-                  <p className="mt-1 text-xs text-mute">Goals</p>
-                </div>
-                <div>
-                  <Ticker value={potw.assists} className="text-3xl font-semibold" />
-                  <p className="mt-1 text-xs text-mute">Assists</p>
-                </div>
-              </div>
+              {potw ? (
+                <>
+                  <div className="flex items-end gap-5">
+                    {potw.avatar ? (
+                      <PlayerAvatar name={potw.name} src={potw.avatar} className="size-20 ring-2 ring-gold/60 md:size-24" />
+                    ) : (
+                      <Initials name={potw.name} className="size-20 bg-linear-to-br from-gold to-[#8a6a22] text-2xl text-black md:size-24" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-display truncate text-5xl md:text-6xl">{potw.name}</p>
+                      {potw.number != null && <p className="mt-2 text-sm text-mute">#{potw.number}</p>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 border-t border-gold/15 pt-5">
+                    <div>
+                      <Ticker value={potw.avgRating} decimals={1} className="text-3xl font-semibold text-gold" />
+                      <p className="mt-1 text-xs text-mute">Avg rating</p>
+                    </div>
+                    <div>
+                      <Ticker value={potw.goals} className="text-3xl font-semibold" />
+                      <p className="mt-1 text-xs text-mute">Goals</p>
+                    </div>
+                    <div>
+                      <Ticker value={potw.assists} className="text-3xl font-semibold" />
+                      <p className="mt-1 text-xs text-mute">Assists</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-mute">Play 3+ matches this week to enter the race.</p>
+              )}
             </div>
           </TiltCard>
         </Reveal>
@@ -190,9 +259,9 @@ export function Overview() {
             <div className="flex h-full flex-col justify-between gap-6">
               <p className="eyebrow">Golden Boot</p>
               <div>
-                <Ticker value={topScorer.goals} className="text-display block text-5xl" />
-                <p className="mt-2 text-sm text-mute">
-                  goals · <span className="text-chalk">{topScorer.name}</span>
+                <Ticker value={scorer?.value ?? 0} className="text-display block text-5xl" />
+                <p className="mt-2 truncate text-sm text-mute">
+                  goals · <span className="text-chalk">{scorer?.name ?? "—"}</span>
                 </p>
               </div>
             </div>
@@ -205,9 +274,9 @@ export function Overview() {
             <div className="flex h-full flex-col justify-between gap-6">
               <p className="eyebrow">Playmaker</p>
               <div>
-                <Ticker value={topAssist.assists} className="text-display block text-5xl" />
-                <p className="mt-2 text-sm text-mute">
-                  assists · <span className="text-chalk">{topAssist.name}</span>
+                <Ticker value={assister?.value ?? 0} className="text-display block text-5xl" />
+                <p className="mt-2 truncate text-sm text-mute">
+                  assists · <span className="text-chalk">{assister?.name ?? "—"}</span>
                 </p>
               </div>
             </div>
@@ -233,10 +302,8 @@ export function Overview() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent transition-colors duration-700">
                   Goal of the Week
                 </p>
-                <p className="mt-1 text-xl font-semibold tracking-tight">{gotw.title}</p>
-                <p className="mt-1 text-sm text-mute">
-                  {gotw.player} · {gotw.votes} votes
-                </p>
+                <p className="mt-1 text-xl font-semibold tracking-tight">{real ? "Voting opens soon" : gotw.title}</p>
+                <p className="mt-1 text-sm text-mute">{real ? "Clip submissions arrive in Phase 4" : `${gotw.player} · ${gotw.votes} votes`}</p>
               </div>
             </div>
           </TiltCard>
@@ -248,10 +315,16 @@ export function Overview() {
             <div className="flex h-full flex-col justify-between gap-6">
               <p className="text-[13px] font-semibold text-depleted">Stamina depleted</p>
               <div>
-                <p className="text-3xl font-semibold tracking-tight">{wpotw.name}</p>
-                <p className="mt-1 text-sm text-mute">
-                  <Ticker value={wpotw.avgRating} decimals={1} className="text-chalk" /> avg · Worst of the Week
-                </p>
+                {wpotw ? (
+                  <>
+                    <p className="truncate text-3xl font-semibold tracking-tight">{wpotw.name}</p>
+                    <p className="mt-1 text-sm text-mute">
+                      <Ticker value={wpotw.avgRating} decimals={1} className="text-chalk" /> avg · {wpotw.live ? "so far" : "Worst of the Week"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-mute">Nobody qualified yet.</p>
+                )}
               </div>
             </div>
           </TiltCard>
@@ -265,12 +338,14 @@ export function Overview() {
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium">
                   <span className="relative flex size-2">
-                    <span className="absolute inline-flex size-full rounded-full bg-gold opacity-60 motion-safe:animate-ping" />
-                    <span className="relative inline-flex size-2 rounded-full bg-gold" />
+                    <span
+                      className={`absolute inline-flex size-full rounded-full opacity-60 motion-safe:animate-ping ${sync?.ok ? "bg-accent" : sync ? "bg-depleted" : "bg-gold"}`}
+                    />
+                    <span className={`relative inline-flex size-2 rounded-full ${sync?.ok ? "bg-accent" : sync ? "bg-depleted" : "bg-gold"}`} />
                   </span>
-                  Demo data
+                  {sync ? (sync.ok ? "Live from EA" : "Sync failed") : "Demo data"}
                 </p>
-                <p className="mt-1 text-sm text-mute">Live stats from EA are coming soon.</p>
+                <p className="mt-1 text-sm text-mute">{sync ? `Last sync ${timeAgo(sync.at)}` : "Waiting for the first EA sync."}</p>
               </div>
             </div>
           </TiltCard>

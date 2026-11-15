@@ -39,6 +39,51 @@ const SCHEMA = [
     updated_at timestamptz NOT NULL DEFAULT now()
   )`,
   `INSERT INTO club_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`,
+  `CREATE TABLE IF NOT EXISTS ea_matches (
+    match_id text PRIMARY KEY,
+    match_type text NOT NULL,
+    played_at timestamptz NOT NULL,
+    goals_for int NOT NULL,
+    goals_against int NOT NULL,
+    result text NOT NULL,
+    opponent_id text,
+    opponent_name text,
+    raw jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS ea_matches_played_idx ON ea_matches (played_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS ea_match_players (
+    match_id text NOT NULL REFERENCES ea_matches (match_id) ON DELETE CASCADE,
+    gamertag text NOT NULL,
+    position text,
+    rating real,
+    goals int NOT NULL DEFAULT 0,
+    assists int NOT NULL DEFAULT 0,
+    shots int NOT NULL DEFAULT 0,
+    passes_made int NOT NULL DEFAULT 0,
+    pass_attempts int NOT NULL DEFAULT 0,
+    tackles_made int NOT NULL DEFAULT 0,
+    tackle_attempts int NOT NULL DEFAULT 0,
+    saves int NOT NULL DEFAULT 0,
+    clean_sheet boolean NOT NULL DEFAULT false,
+    motm boolean NOT NULL DEFAULT false,
+    red_cards int NOT NULL DEFAULT 0,
+    PRIMARY KEY (match_id, gamertag)
+  )`,
+  `CREATE INDEX IF NOT EXISTS ea_match_players_tag_idx ON ea_match_players (lower(gamertag))`,
+  `CREATE TABLE IF NOT EXISTS ea_state (
+    kind text PRIMARY KEY,
+    data jsonb NOT NULL,
+    fetched_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS sync_runs (
+    id bigserial PRIMARY KEY,
+    at timestamptz NOT NULL DEFAULT now(),
+    source text,
+    ok boolean NOT NULL,
+    matches_added int NOT NULL DEFAULT 0,
+    details jsonb
+  )`,
 ];
 
 let ready: Promise<void> | null = null;

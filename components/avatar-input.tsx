@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-/** Square-crops and downsizes a photo in the browser (512px WebP, JPEG fallback). */
+/** Square-crops and downsizes a photo in the browser (512px JPEG — also works in share images). */
 async function shrink(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const size = Math.min(bitmap.width, bitmap.height);
@@ -10,10 +10,9 @@ async function shrink(file: File): Promise<Blob> {
   canvas.width = canvas.height = 512;
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(bitmap, (bitmap.width - size) / 2, (bitmap.height - size) / 2, size, size, 0, 0, 512, 512);
-  const as = (type: string) => new Promise<Blob | null>((r) => canvas.toBlob(r, type, 0.85));
-  const webp = await as("image/webp");
-  if (webp && webp.type === "image/webp") return webp;
-  return (await as("image/jpeg"))!;
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.86));
+  if (!blob) throw new Error("Could not process image");
+  return blob;
 }
 
 export function AvatarInput({

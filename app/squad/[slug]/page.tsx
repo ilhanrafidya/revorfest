@@ -5,6 +5,8 @@ import { Reveal } from "@/components/motion-primitives";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { avatarUrl, getPlayerBySlug } from "@/lib/players";
 import { currentPlayer } from "@/lib/session";
+import { memberStats, recentRatings } from "@/lib/stats";
+import { ResultPill } from "@/components/stat-bits";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getPlayerBySlug((await params).slug);
@@ -21,6 +23,7 @@ export default async function PlayerPage({
   const [{ slug }, { welcome }] = await Promise.all([params, searchParams]);
   const [p, me] = await Promise.all([getPlayerBySlug(slug), currentPlayer()]);
   if (!p) notFound();
+  const [ea, recent] = await Promise.all([memberStats(p.ea_gamertag), recentRatings(p.ea_gamertag)]);
   const isMe = me?.id === p.id;
   const joined = new Date(p.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
@@ -67,16 +70,45 @@ export default async function PlayerPage({
       </Reveal>
 
       <div className="relative mt-12 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        {["Matches", "Goals", "Assists", "Avg rating"].map((label, i) => (
-          <Reveal key={label} delay={0.05 * i}>
+        {[
+          { label: "Matches", value: ea ? String(ea.gamesPlayed) : "—" },
+          { label: "Goals", value: ea ? String(ea.goals) : "—" },
+          { label: "Assists", value: ea ? String(ea.assists) : "—" },
+          { label: "Avg rating", value: ea && ea.ratingAve ? ea.ratingAve.toFixed(1) : "—" },
+        ].map((t, i) => (
+          <Reveal key={t.label} delay={0.05 * i}>
             <div className="tile p-5">
-              <p className="eyebrow">{label}</p>
-              <p className="text-display mt-6 text-5xl text-mute/40">—</p>
+              <p className="eyebrow">{t.label}</p>
+              <p className={`text-display mt-6 text-5xl tabular-nums ${t.value === "—" ? "text-mute/40" : ""}`}>{t.value}</p>
             </div>
           </Reveal>
         ))}
       </div>
-      <p className="relative mt-4 text-sm text-mute">Stats sync from EA in Phase 3.</p>
+      <p className="relative mt-4 text-sm text-mute">
+        {ea
+          ? `Club career stats from EA · ${ea.motm} Man of the Match · ${ea.cleanSheets} clean sheets`
+          : `No EA stats found for "${p.ea_gamertag}" yet — check the EA ID matches in-game exactly.`}
+      </p>
+
+      {recent.length > 0 && (
+        <Reveal className="relative mt-10">
+          <p className="eyebrow mb-3">Recent matches</p>
+          <ul className="tile divide-y divide-white/[0.06] p-1">
+            {recent.map((r) => (
+              <li key={r.match_id}>
+                <Link href={`/matches/${r.match_id}`} className="flex items-center gap-4 rounded-2xl px-4 py-3 hover:bg-white/[0.04]">
+                  <ResultPill result={r.result} />
+                  <span className="min-w-0 flex-1 truncate text-sm">vs {r.opponent_name ?? "Unknown"}</span>
+                  <span className="text-xs text-mute">
+                    {r.goals}G {r.assists}A
+                  </span>
+                  <span className="w-10 text-right font-semibold tabular-nums">{r.rating != null ? Number(r.rating).toFixed(1) : "—"}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      )}
 
       {isMe && (
         <Reveal className="relative mt-10 flex gap-3">

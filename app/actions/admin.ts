@@ -51,3 +51,17 @@ export async function resetPin(playerId: string): Promise<Result> {
   await db()`UPDATE players SET pin_hash = ${await bcrypt.hash(pin, 10)}, failed_pins = 0, locked_until = NULL WHERE id = ${playerId}`;
   return { ok: true, message: pin };
 }
+
+export async function linkGamertag(playerId: string, gamertag: string): Promise<Result> {
+  if (!(await requireAdmin())) return { ok: false, error: "Admins only." };
+  const tag = gamertag.trim();
+  if (!tag) return { ok: false, error: "Missing EA name." };
+  try {
+    await db()`UPDATE players SET ea_gamertag = ${tag} WHERE id = ${playerId}`;
+  } catch (err) {
+    if (uniqueViolation(err)) return { ok: false, error: "Another player already uses that EA ID." };
+    throw err;
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

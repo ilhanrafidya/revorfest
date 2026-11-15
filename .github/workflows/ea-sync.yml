@@ -1,0 +1,32 @@
+name: EA sync
+
+on:
+  schedule:
+    - cron: "*/15 12-19 * * *" # every 15 min, 19:00–02:59 WIB (match time)
+    - cron: "7 0-11,20-23 * * *" # hourly the rest of the day
+  workflow_dispatch: # "Run workflow" button in the Actions tab
+  push:
+    branches: [main]
+    paths:
+      - scripts/ea_sync.py
+      - .github/workflows/ea-sync.yml
+
+permissions:
+  id-token: write # lets the job prove to /api/ingest that it comes from this repo
+  contents: read
+
+concurrency:
+  group: ea-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet curl_cffi
+      - run: python scripts/ea_sync.py

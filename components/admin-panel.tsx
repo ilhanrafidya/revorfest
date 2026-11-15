@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { resetPin, setActive, setInviteCode, setRole } from "@/app/actions/admin";
+import { linkGamertag, resetPin, setActive, setInviteCode, setRole } from "@/app/actions/admin";
+import type { SyncStatus } from "@/lib/stats";
 import { PlayerAvatar } from "./player-avatar";
 import { Button, ErrorText, Input } from "./ui";
 
@@ -17,7 +18,17 @@ export type AdminPlayer = {
   avatar: string | null;
 };
 
-export function AdminPanel({ players, meId }: { players: AdminPlayer[]; meId: string }) {
+export function AdminPanel({
+  players,
+  meId,
+  unlinked,
+  sync,
+}: {
+  players: AdminPlayer[];
+  meId: string;
+  unlinked: string[];
+  sync: SyncStatus;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [code, setCode] = useState("");
@@ -41,6 +52,67 @@ export function AdminPanel({ players, meId }: { players: AdminPlayer[]; meId: st
         ) : (
           <ErrorText>{notice.text}</ErrorText>
         ))}
+
+      <div className="tile space-y-3 p-6">
+        <p className="text-lg font-semibold">EA sync</p>
+        {sync ? (
+          <>
+            <p className="text-sm">
+              <span className={sync.ok ? "text-accent" : "text-depleted"}>{sync.ok ? "Last sync OK" : "Last sync failed"}</span>
+              <span className="text-mute"> · {new Date(sync.at).toLocaleString("en-GB", { timeZone: "Asia/Jakarta" })} WIB · {sync.added} new matches</span>
+            </p>
+            {Object.entries(sync.errors).length > 0 && (
+              <ul className="space-y-1 text-xs text-mute">
+                {Object.entries(sync.errors).map(([k, v]) => (
+                  <li key={k}>
+                    <span className="text-depleted">{k}</span>: {v}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-mute">No sync has reached the app yet.</p>
+        )}
+        <p className="text-xs text-mute">
+          Runs automatically every 15 min from 19:00–03:00 WIB (hourly otherwise). To sync right now: GitHub → ilhanrafidya/revorfest →
+          Actions → EA sync → Run workflow.
+        </p>
+      </div>
+
+      {unlinked.length > 0 && (
+        <div className="tile space-y-4 p-6">
+          <div>
+            <p className="text-lg font-semibold">Unlinked EA names</p>
+            <p className="text-sm text-mute">These EA IDs appear in synced stats but don&apos;t match any player. Link them so stats show up.</p>
+          </div>
+          <ul className="space-y-2">
+            {unlinked.map((tag) => (
+              <li key={tag} className="flex flex-wrap items-center gap-3">
+                <span className="min-w-32 font-medium">{tag}</span>
+                <select
+                  defaultValue=""
+                  disabled={pending}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (id) run(() => linkGamertag(id, tag), () => `Linked ${tag}.`);
+                  }}
+                  className="hairline rounded-full bg-white/[0.06] px-3 py-2 text-sm"
+                >
+                  <option value="">Link to player…</option>
+                  {players
+                    .filter((p) => p.active)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        #{p.number} {p.name} ({p.gamertag})
+                      </option>
+                    ))}
+                </select>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="tile space-y-4 p-6">
         <div>
