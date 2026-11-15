@@ -5,6 +5,7 @@ import { db, ensureSchema } from "@/lib/db";
 import { currentPlayer } from "@/lib/session";
 import { parseClipUrl } from "@/lib/clip-url";
 import { windowState } from "@/lib/clips";
+import { deleteStored } from "@/lib/clip-storage";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -58,8 +59,14 @@ export async function removeClip(clipId: string): Promise<Result> {
   const me = await currentPlayer();
   if (!me) return { ok: false, error: "Log in first." };
   const sql = db();
-  if (me.role === "admin") await sql`DELETE FROM clips WHERE id = ${clipId}`;
-  else await sql`DELETE FROM clips WHERE id = ${clipId} AND submitted_by = ${me.id} AND week_key = ${windowState().key}`;
+  const gone = (me.role === "admin"
+    ? await sql`DELETE FROM clips WHERE id = ${clipId} RETURNING provider, url, embed_id`
+    : await sql`DELETE FROM clips WHERE id = ${clipId} AND submitted_by = ${me.id} AND week_key = ${windowState().key} RETURNING provider, url, embed_id`) as {
+    provider: string;
+    url: string;
+    embed_id: string;
+  }[];
+  if (gone[0]?.provider === "upload") await deleteStored([gone[0].url, gone[0].embed_id]);
   revalidatePath("/showdown");
   return { ok: true };
 }

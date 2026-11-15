@@ -21,7 +21,7 @@ export function ClipArchive({ kind, items }: { kind: "gotw" | "notw"; items: Win
           {items.map((w, i) => (
             <Reveal key={w.id} delay={Math.min(i * 0.05, 0.3)}>
               <div className={`tile p-3 ${fame ? "ring-1 ring-gold/20" : "ring-1 ring-depleted/20"}`}>
-                <ClipPlayer provider={w.provider} embedId={w.embedId} tone={kind} />
+                <ClipPlayer provider={w.provider} embedId={w.embedId} url={w.url} tone={kind} />
                 <div className="px-2 pb-1 pt-3">
                   <p className="eyebrow">{w.weekLabel}</p>
                   {w.caption && <p className="mt-1 text-lg font-semibold">“{w.caption}”</p>}

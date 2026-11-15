@@ -20,13 +20,15 @@ export type ClipCardData = {
 };
 
 /** Lightweight facade: shows a thumbnail and only loads the heavy embed on tap. */
-export function ClipPlayer({ provider, embedId, tone = "gotw" }: { provider: string; embedId: string; tone?: "gotw" | "notw" }) {
+export function ClipPlayer({ provider, embedId, url, tone = "gotw" }: { provider: string; embedId: string; url?: string; tone?: "gotw" | "notw" }) {
   const [playing, setPlaying] = useState(false);
   const thumb = thumbUrl(provider, embedId);
   const tall = provider === "tiktok";
   return (
     <div className={`relative w-full overflow-hidden rounded-2xl bg-black ${tall ? "aspect-[9/16] max-h-[560px]" : "aspect-video"}`}>
-      {playing ? (
+      {playing && provider === "upload" && url ? (
+        <video src={url} poster={thumb ?? undefined} className="absolute inset-0 size-full object-contain" autoPlay playsInline controls />
+      ) : playing ? (
         <iframe
           src={embedUrl(provider, embedId)}
           className="absolute inset-0 size-full"
@@ -81,7 +83,7 @@ export function ClipCard({
 
   return (
     <div className={`tile p-3 ${clip.myVote ? (category === "gotw" ? "ring-2 ring-accent/60" : "ring-2 ring-depleted/60") : ""}`}>
-      <ClipPlayer provider={clip.provider} embedId={clip.embedId} tone={category} />
+      <ClipPlayer provider={clip.provider} embedId={clip.embedId} url={clip.url} tone={category} />
       <div className="px-2 pb-1 pt-4">
         {clip.caption && <p className="text-lg font-semibold leading-snug tracking-tight">“{clip.caption}”</p>}
         <div className="mt-3 flex items-center gap-2 text-sm text-mute">

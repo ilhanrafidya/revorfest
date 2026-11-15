@@ -35,7 +35,8 @@ export function embedUrl(provider: string, id: string) {
 }
 
 export function thumbUrl(provider: string, id: string) {
+  if (provider === "upload") return id.startsWith("https://") ? id : null; // uploads store their poster URL here
   return provider === "youtube" ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
 }
 
-export const PROVIDER_LABEL: Record<string, string> = { youtube: "YouTube", streamable: "Streamable", tiktok: "TikTok" };
+export const PROVIDER_LABEL: Record<string, string> = { youtube: "YouTube", streamable: "Streamable", tiktok: "TikTok", upload: "Uploaded" };

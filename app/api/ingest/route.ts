@@ -3,6 +3,7 @@ import { db, ensureSchema } from "@/lib/db";
 import { parseMatches, type ParsedMatch, type ParsedMatchPlayer } from "@/lib/ea";
 import { authorizeIngest } from "@/lib/ingest-auth";
 import { announcePending } from "@/lib/push";
+import { cleanupLosingUploads } from "@/lib/clip-storage";
 
 export const maxDuration = 30;
 
@@ -81,5 +82,7 @@ export async function POST(req: Request) {
   if (ok) revalidatePath("/", "layout");
   // weekly POTW / Player of the Weak + season awards → push, once each
   const announced = ok ? await announcePending().catch(() => []) : [];
-  return Response.json({ ok, added, seen: matches.length, errors, announced });
+  // uploaded Showdown clips that lost their vote are deleted to keep storage small
+  const cleaned = ok ? await cleanupLosingUploads().catch(() => 0) : 0;
+  return Response.json({ ok, added, seen: matches.length, errors, announced, cleaned });
 }

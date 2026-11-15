@@ -56,7 +56,7 @@ export default async function ShowdownPage({ searchParams }: { searchParams: Pro
             (x) =>
               x.w && (
                 <div key={x.title} className={`tile p-3 ${x.cls}`}>
-                  <ClipPlayer provider={x.w.provider} embedId={x.w.embedId} tone={x.tone} />
+                  <ClipPlayer provider={x.w.provider} embedId={x.w.embedId} url={x.w.url} tone={x.tone} />
                   <div className="px-2 pb-1 pt-3">
                     <p className={`text-sm font-semibold ${x.tone === "gotw" ? "text-gold" : "text-depleted"}`}>{x.title}</p>
                     {x.w.caption && <p className="mt-1 font-semibold">“{x.w.caption}”</p>}
