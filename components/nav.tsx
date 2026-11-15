@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ResyncButton } from "./resync-button";
 import { usePathname } from "next/navigation";
 import { m } from "motion/react";
 import { HomeIcon, PitchIcon, PlayIcon, SquadIcon, StatsIcon } from "./icons";
@@ -48,6 +49,7 @@ export function TopNav({ me }: { me: NavMe }) {
             </Link>
           );
         })}
+        {me && <ResyncButton variant="desktop" />}
         <AccountChip me={me} />
       </nav>
     </header>
@@ -72,9 +74,12 @@ function AccountChip({ me, className = "" }: { me: NavMe; className?: string }) 
 /** Floating account chip for phones (top-right). */
 export function MobileAccount({ me }: { me: NavMe }) {
   return (
-    <div className="fixed right-4 z-50 md:hidden" style={{ top: "calc(14px + env(safe-area-inset-top))" }}>
+    <div className="fixed right-4 z-50 flex items-start gap-2 md:hidden" style={{ top: "calc(14px + env(safe-area-inset-top))" }}>
       {me ? (
-        <AccountChip me={me} className="block shadow-xl shadow-black/50" />
+        <>
+          <ResyncButton variant="mobile" />
+          <AccountChip me={me} className="block shadow-xl shadow-black/50" />
+        </>
       ) : (
         <Link href="/login" className="glass hairline block rounded-full px-4 py-2 text-sm font-semibold">
           Log in
