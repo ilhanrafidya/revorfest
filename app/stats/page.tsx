@@ -51,7 +51,7 @@ export default async function StatsPage() {
           <span className="font-semibold text-chalk">How it&apos;s calculated:</span> minimum {MIN_MATCHES} matches in the week
           (Mon–Sun WIB). Score = avg rating × 10 + (goals + 0.75 × assists) per match × 4 + clean sheets per match × 6 for
           GK/defenders (× 2 for others) + tackles per match × 0.4 + saves per match × 0.8 for keepers + 2 per Man of the
-          Match. Worst Player of the Week = lowest average rating among qualified players. Winners lock in on Monday.
+          Match. Player of the Weak = lowest average rating among qualified players. Winners lock in on Monday.
         </p>
       </div>
 
@@ -138,7 +138,7 @@ function HonorCard({ kind, line, weekKey }: { kind: "potw" | "wpotw"; line: Week
       />
       <div className="relative">
         <p className={`text-sm font-semibold ${gold ? "text-gold" : "text-depleted"}`}>
-          {gold ? "Player of the Week" : "Worst Player of the Week · Stamina depleted"}
+          {gold ? "Player of the Week" : "Player of the Weak · Stamina depleted"}
         </p>
         {line ? (
           <>
@@ -157,7 +157,7 @@ function HonorCard({ kind, line, weekKey }: { kind: "potw" | "wpotw"; line: Week
             <ShareButton
               url={`/share/honors?kind=${kind}&week=${weekKey}`}
               filename={`revorfest-${kind}-${weekKey}.png`}
-              title={gold ? "Revorfest Player of the Week" : "Revorfest Worst Player of the Week"}
+              title={gold ? "Revorfest Player of the Week" : "Revorfest Player of the Weak"}
               className={`mt-5 ${gold ? "bg-gold/15 text-gold" : "bg-depleted/15 text-depleted"}`}
             />
           </>

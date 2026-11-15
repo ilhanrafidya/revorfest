@@ -52,7 +52,7 @@ export async function GET(req: Request) {
           <div style={{ fontSize: 34, letterSpacing: 8, fontWeight: 700 }}>REVORFEST</div>
         </div>
         <div style={{ marginTop: 50, fontSize: 40, letterSpacing: 6, fontWeight: 700, color: accent }}>
-          {gold ? "PLAYER OF THE WEEK" : "WORST PLAYER OF THE WEEK"}
+          {gold ? "PLAYER OF THE WEEK" : "PLAYER OF THE WEAK"}
         </div>
         <div style={{ marginTop: 10, fontSize: 30, color: "#86868B" }}>{gold ? h.label : `Stamina depleted · ${h.label}`}</div>
         <div

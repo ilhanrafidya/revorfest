@@ -308,13 +308,13 @@ export async function Overview() {
         <Reveal delay={0.05} className="col-span-1">
           <TiltCard className="p-5 ring-1 ring-depleted/20" background="radial-gradient(90% 70% at 100% 0%, rgb(255 69 58 / 0.14), transparent 70%)">
             <div className="flex h-full flex-col justify-between gap-6">
-              <p className="text-[13px] font-semibold text-depleted">Stamina depleted</p>
+              <p className="text-[13px] font-semibold text-depleted">Player of the Weak</p>
               <div>
                 {wpotw ? (
                   <>
                     <p className="truncate text-3xl font-semibold tracking-tight">{wpotw.name}</p>
                     <p className="mt-1 text-sm text-mute">
-                      <Ticker value={wpotw.avgRating} decimals={1} className="text-chalk" /> avg · {wpotw.live ? "so far" : "Worst of the Week"}
+                      <Ticker value={wpotw.avgRating} decimals={1} className="text-chalk" /> avg · {wpotw.live ? "so far" : "stamina depleted"}
                     </p>
                   </>
                 ) : (
