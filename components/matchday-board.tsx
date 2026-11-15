@@ -16,6 +16,7 @@ import { KITS, KIT_ORDER, type Kit } from "@/lib/kits";
 import { EASE, SPRING_SNAPPY } from "@/lib/motion";
 import { PlayerAvatar } from "./player-avatar";
 import { ShareButton } from "./share-button";
+import { Reveal } from "./motion-primitives";
 import { Button, ErrorText, Input } from "./ui";
 
 type Status = "ready" | "on_the_way" | "out";
@@ -107,7 +108,7 @@ export function MatchdayBoard({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="tile p-6 md:p-8">
+      <Reveal className="tile p-6 md:p-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="eyebrow">Next matchday</p>
@@ -145,13 +146,13 @@ export function MatchdayBoard({
           </div>
         )}
         {!meId && <p className="mt-6 text-sm text-mute">Log in to set your status.</p>}
-      </div>
+      </Reveal>
 
       <ErrorText>{error}</ErrorText>
 
       {/* Tactical board */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="tile p-4 md:p-6">
+        <Reveal delay={0.08} className="tile p-4 md:p-6">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {manage ? (
               <select
@@ -274,10 +275,10 @@ export function MatchdayBoard({
             })}
           </div>
           {manage && <p className="mt-3 text-center text-xs text-mute">Tap a spot to pick a player — or drag from the bench on desktop. ! = out of position.</p>}
-        </div>
+        </Reveal>
 
         {/* Bench + attendance */}
-        <div className="space-y-4">
+        <Reveal delay={0.16} className="space-y-4">
           {manage && (
             <div className="tile p-4">
               <p className="eyebrow mb-3">Bench</p>
@@ -333,7 +334,7 @@ export function MatchdayBoard({
               Mark matchday as finished
             </button>
           )}
-        </div>
+        </Reveal>
       </div>
 
       {/* Player picker sheet */}

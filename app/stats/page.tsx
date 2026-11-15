@@ -36,15 +36,15 @@ export default async function StatsPage() {
       </Reveal>
 
       {/* Weekly honors */}
-      <div className="mt-14">
+      <Reveal className="mt-14">
         <SectionTitle eyebrow="Weekly spotlight" title={`Last week · ${prev.label}`} />
         <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <HonorCard kind="potw" line={prev.potw} weekKey={prev.key} />
           <HonorCard kind="wpotw" line={prev.wpotw} weekKey={prev.key} />
         </div>
-      </div>
+      </Reveal>
 
-      <div className="mt-14">
+      <Reveal className="mt-14">
         <SectionTitle eyebrow="Live race" title={`This week · ${now.label}`} />
         <RaceTable table={now.table} />
         <p className="mt-4 text-xs leading-relaxed text-mute">
@@ -53,10 +53,10 @@ export default async function StatsPage() {
           GK/defenders (× 2 for others) + tackles per match × 0.4 + saves per match × 0.8 for keepers + 2 per Man of the
           Match. Player of the Weak = lowest average rating among qualified players. Winners lock in on Monday.
         </p>
-      </div>
+      </Reveal>
 
       {/* Leaderboards */}
-      <div className="mt-16">
+      <Reveal className="mt-16">
         <SectionTitle eyebrow="Leaderboards" title="Club career (EA)" />
         {boards.all.length === 0 ? (
           <Empty>Leaderboards appear after the first successful EA sync.</Empty>
@@ -68,10 +68,10 @@ export default async function StatsPage() {
             <Board title="MVP" unit="avg rating" rows={boards.mvp} value={(m) => m.ratingAve} decimals={1} />
           </div>
         )}
-      </div>
+      </Reveal>
 
       {/* Matches */}
-      <div className="mt-16">
+      <Reveal className="mt-16">
         <SectionTitle eyebrow="Match archive" title="Recent matches" />
         {matches.length === 0 ? (
           <Empty>No matches archived yet.</Empty>
@@ -95,7 +95,7 @@ export default async function StatsPage() {
             ))}
           </ul>
         )}
-      </div>
+      </Reveal>
     </section>
   );
 }

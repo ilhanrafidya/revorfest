@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ClipCard, ClipPlayer } from "@/components/clip-card";
+import { ClipPlayer } from "@/components/clip-card";
+import { ShowdownTabs } from "@/components/showdown-tabs";
 import { Reveal } from "@/components/motion-primitives";
-import { SubmitClip } from "@/components/submit-clip";
 import { weekClips, windowState, winners, type Category } from "@/lib/clips";
 import { listPlayers } from "@/lib/players";
 import { currentPlayer } from "@/lib/session";
@@ -11,12 +11,14 @@ export const metadata: Metadata = { title: "Showdown" };
 
 export default async function ShowdownPage({ searchParams }: { searchParams: Promise<{ cat?: string }> }) {
   const cat: Category = (await searchParams).cat === "notw" ? "notw" : "gotw";
-  const gotw = cat === "gotw";
   const w = windowState();
   const me = await currentPlayer();
-  const [list, voting, players, lastGotw, lastNotw] = await Promise.all([
-    weekClips(w.key, cat, me?.id ?? null),
-    w.votingKey ? weekClips(w.votingKey, cat, me?.id ?? null) : Promise.resolve([]),
+  const meId = me?.id ?? null;
+  const [gList, nList, gVote, nVote, players, lastGotw, lastNotw] = await Promise.all([
+    weekClips(w.key, "gotw", meId),
+    weekClips(w.key, "notw", meId),
+    w.votingKey ? weekClips(w.votingKey, "gotw", meId) : Promise.resolve([]),
+    w.votingKey ? weekClips(w.votingKey, "notw", meId) : Promise.resolve([]),
     listPlayers(),
     winners("gotw", 1),
     winners("notw", 1),
@@ -39,8 +41,8 @@ export default async function ShowdownPage({ searchParams }: { searchParams: Pro
 
       {/* Archive buttons */}
       <div className="mt-8 grid grid-cols-2 gap-3 md:max-w-xl">
-        <ArchiveButton href="/showdown/hall-of-fame" tone="fame" title="Hall of Fame" sub="Every Goal of the Week" />
-        <ArchiveButton href="/showdown/wall-of-shame" tone="shame" title="Wall of Shame" sub="Every Nyunda of the Week" />
+        <ArchiveButton href="/showdown/hall-of-fame" tone="fame" title="Hall of Fame" sub="Best goals" />
+        <ArchiveButton href="/showdown/wall-of-shame" tone="shame" title="Wall of Shame" sub="Biggest blunders" />
       </div>
 
       {/* Last winners */}
@@ -67,72 +69,14 @@ export default async function ShowdownPage({ searchParams }: { searchParams: Pro
         </div>
       )}
 
-      {/* Category switch */}
-      <div className="glass hairline mt-12 inline-flex rounded-full p-1.5">
-        <Link href="/showdown" className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${gotw ? "bg-accent text-on-accent" : "text-mute hover:text-chalk"}`}>
-          Goal of the Week
-        </Link>
-        <Link
-          href="/showdown?cat=notw"
-          className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${!gotw ? "bg-depleted text-white" : "text-mute hover:text-chalk"}`}
-        >
-          Nyunda of the Week
-        </Link>
-      </div>
-
-      {/* Monday: voting on last week's clips */}
-      {w.votingKey && (
-        <div className="mt-10">
-          <div className={`tile mb-5 p-5 ${gotw ? "ring-1 ring-accent/30" : "ring-1 ring-depleted/30"}`}>
-            <p className={`text-sm font-semibold ${gotw ? "text-accent" : "text-depleted"}`}>Voting is open — today only</p>
-            <p className="mt-1 text-xl font-semibold tracking-tight">Pick last week&apos;s best {gotw ? "goal" : "nyunda"} · {w.votingLabel}</p>
-            <p className="mt-1 text-sm text-mute">{me ? "One vote per category. You can change it until 23:59 WIB." : "Log in to vote."}</p>
-          </div>
-          {voting.length === 0 ? (
-            <div className="tile p-8 text-center text-mute">Nothing was submitted last week.</div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {voting.map((c) => (
-                <ClipCard key={c.id} clip={c} category={cat} meId={me?.id ?? null} isAdmin={me?.role === "admin"} votingOpen />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* This week's submissions */}
-      <div className="mt-12">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3 px-1">
-          <div>
-            <p className="eyebrow">This week · {w.label}</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{gotw ? "Worldies so far" : "Nyunda moments so far"}</h2>
-            <p className="mt-1 text-sm text-mute">Voting for these opens next Monday.</p>
-          </div>
-        </div>
-        <div className="mb-6">
-          {me ? (
-            <SubmitClip key={cat} category={cat} players={players.map((p) => ({ id: p.id, name: p.display_name, number: p.jersey_number }))} />
-          ) : (
-            <p className="text-sm text-mute">
-              <Link href="/login" className="font-semibold text-accent">
-                Log in
-              </Link>{" "}
-              to submit clips and vote.
-            </p>
-          )}
-        </div>
-        {list.length === 0 ? (
-          <div className="tile p-8 text-center text-mute">
-            {gotw ? "No worldies submitted yet this week." : "No nyunda moments yet this week. Suspicious."}
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {list.map((c) => (
-              <ClipCard key={c.id} clip={c} category={cat} meId={me?.id ?? null} isAdmin={me?.role === "admin"} votingOpen={false} removable />
-            ))}
-          </div>
-        )}
-      </div>
+      <ShowdownTabs
+        initial={cat}
+        data={{ gotw: { voting: gVote, list: gList }, notw: { voting: nVote, list: nList } }}
+        week={w.label}
+        voting={w.votingLabel}
+        me={me ? { id: me.id, admin: me.role === "admin" } : null}
+        players={players.map((p) => ({ id: p.id, name: p.display_name, number: p.jersey_number }))}
+      />
     </section>
   );
 }
@@ -142,7 +86,7 @@ function ArchiveButton({ href, tone, title, sub }: { href: string; tone: "fame" 
   return (
     <Link
       href={href}
-      className={`group tile flex items-center gap-3 p-4 transition hover:-translate-y-0.5 active:scale-[0.98] ${
+      className={`group tile flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 active:scale-[0.97] sm:flex-row sm:items-center ${
         fame ? "ring-1 ring-gold/30 hover:ring-gold/60" : "ring-1 ring-depleted/30 hover:ring-depleted/60"
       }`}
     >
@@ -155,28 +99,37 @@ function ArchiveButton({ href, tone, title, sub }: { href: string; tone: "fame" 
             : "radial-gradient(90% 90% at 0% 0%, rgb(255 69 58 / 0.16), transparent 70%)",
         }}
       />
-      <span className={`relative grid size-11 shrink-0 place-items-center rounded-full ${fame ? "bg-gold/15 text-gold" : "bg-depleted/15 text-depleted"}`}>
-        {fame ? (
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" />
-            <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3a8 8 0 0 0-5 14.2V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2.8A8 8 0 0 0 12 3z" />
-            <circle cx="9" cy="11" r="1.5" fill="currentColor" />
-            <circle cx="15" cy="11" r="1.5" fill="currentColor" />
-            <path d="M10 21v-2M14 21v-2" />
-          </svg>
-        )}
+      <span className="relative flex items-center justify-between sm:contents">
+        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${fame ? "bg-gold/15 text-gold" : "bg-depleted/15 text-depleted"}`}>
+          {fame ? (
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" />
+              <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3a8 8 0 0 0-5 14.2V20a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-2.8A8 8 0 0 0 12 3z" />
+              <circle cx="9" cy="11" r="1.5" fill="currentColor" />
+              <circle cx="15" cy="11" r="1.5" fill="currentColor" />
+              <path d="M10 21v-2M14 21v-2" />
+            </svg>
+          )}
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          className={`size-5 shrink-0 transition group-hover:translate-x-1 sm:order-last ${fame ? "text-gold" : "text-depleted"}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="m9 6 6 6-6 6" />
+        </svg>
       </span>
-      <span className="relative min-w-0 flex-1">
-        <span className="block font-semibold">{title}</span>
-        <span className="block truncate text-xs text-mute">{sub}</span>
+      <span className="relative min-w-0 sm:flex-1">
+        <span className="block whitespace-nowrap text-[15px] font-semibold">{title}</span>
+        <span className="block whitespace-nowrap text-xs text-mute">{sub}</span>
       </span>
-      <svg viewBox="0 0 24 24" className={`relative size-5 shrink-0 transition group-hover:translate-x-1 ${fame ? "text-gold" : "text-depleted"}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="m9 6 6 6-6 6" />
-      </svg>
     </Link>
   );
 }
