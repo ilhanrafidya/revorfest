@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { notifyMatchday } from "@/lib/push";
 import { db, ensureSchema } from "@/lib/db";
 import { currentPlayer } from "@/lib/session";
 import { canManage } from "@/lib/matchday";
@@ -39,6 +40,7 @@ export async function createMatchday(local: string, note: string): Promise<Resul
   await sql`INSERT INTO matchdays (scheduled_at, formation, kit, note, created_by)
             VALUES (${when.toISOString()}, ${prev?.formation ?? "4-3-3"}, ${prev?.kit ?? "home"},
                     ${note.trim().slice(0, 80) || null}, ${me.id})`;
+  await notifyMatchday(me, when.toISOString(), note.trim().slice(0, 80) || null).catch(() => null);
   return done();
 }
 

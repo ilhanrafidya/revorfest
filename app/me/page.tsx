@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/profile-form";
+import { NotificationSettings } from "@/components/notification-settings";
 import { avatarUrl, getPlayerById } from "@/lib/players";
 import { currentPlayer } from "@/lib/session";
 import type { Position } from "@/lib/positions";
@@ -17,6 +18,7 @@ export default async function MePage() {
     <section className="mx-auto max-w-xl px-4 pb-40 pt-24 md:pt-32">
       <p className="eyebrow">My profile</p>
       <h1 className="text-display mb-10 mt-2 text-5xl">Edit profile.</h1>
+      <NotificationSettings publicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
       <ProfileForm
         initial={{
           id: p.id,

@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { db, ensureSchema } from "@/lib/db";
 import { parseMatches, type ParsedMatch, type ParsedMatchPlayer } from "@/lib/ea";
 import { authorizeIngest } from "@/lib/ingest-auth";
+import { announcePending } from "@/lib/push";
 
 export const maxDuration = 30;
 
@@ -78,5 +79,7 @@ export async function POST(req: Request) {
   await sql`DELETE FROM sync_runs WHERE id NOT IN (SELECT id FROM sync_runs ORDER BY id DESC LIMIT 200)`;
 
   if (ok) revalidatePath("/", "layout");
-  return Response.json({ ok, added, seen: matches.length, errors });
+  // weekly POTW / Player of the Weak + season awards → push, once each
+  const announced = ok ? await announcePending().catch(() => []) : [];
+  return Response.json({ ok, added, seen: matches.length, errors, announced });
 }

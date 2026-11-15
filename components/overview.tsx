@@ -3,7 +3,10 @@ import { CurrentKitChip } from "./kit-showcase";
 import { PlayFilled } from "./icons";
 import { club as demo, gotw, nextMatchday, potw as demoPotw, topAssist as demoAssist, topScorer as demoScorer, wpotw as demoWpotw } from "@/lib/mock";
 import { PlayerAvatar } from "./player-avatar";
-import { clubOverall, lastSync, leaderboards, recentMatches } from "@/lib/stats";
+import { clubOverall, lastSync, recentMatches } from "@/lib/stats";
+import { seasonAt } from "@/lib/seasons";
+import { seasonWinners } from "@/lib/awards";
+import { rangeTable } from "@/lib/honors";
 import { honorsFor, weekStart } from "@/lib/honors";
 import { timeAgo } from "@/lib/format";
 import { currentMatchday, matchdayRoster } from "@/lib/matchday";
@@ -43,14 +46,16 @@ async function loadExtras() {
 async function loadOverview() {
   try {
     const thisWeek = weekStart();
-    const [overall, recent, boards, now, prev, sync] = await Promise.all([
+    const season = seasonAt();
+    const [overall, recent, now, prev, sync, seasonTable] = await Promise.all([
       clubOverall(),
       recentMatches(5),
-      leaderboards(),
       honorsFor(thisWeek),
       honorsFor(new Date(thisWeek.getTime() - 7 * 86400000)),
       lastSync(),
+      rangeTable(season.start, new Date()),
     ]);
+    const race = seasonWinners(seasonTable);
     if (!overall) return null;
     const last = recent[0];
     const potwLine = prev.potw ?? now.potw;
@@ -71,8 +76,10 @@ async function loadOverview() {
         ? { name: potwLine.name, avatar: potwLine.avatar, number: potwLine.number, avgRating: potwLine.avgRating, goals: potwLine.goals, assists: potwLine.assists, matches: potwLine.matches, live: !prev.potw }
         : null,
       wpotw: wpotwLine ? { name: wpotwLine.name, avgRating: wpotwLine.avgRating, live: !prev.wpotw } : null,
-      scorer: boards.goals[0] ? { name: boards.goals[0].who.name, value: boards.goals[0].goals } : null,
-      assister: boards.assists[0] ? { name: boards.assists[0].who.name, value: boards.assists[0].assists } : null,
+      // Home shows the running EA season; all-time numbers live on Stats.
+      scorer: race.boot ? { name: race.boot.name, value: race.boot.goals } : null,
+      assister: race.assist ? { name: race.assist.name, value: race.assist.assists } : null,
+      season: { name: season.name, ends: season.end.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" }) },
       sync,
     };
   } catch {
@@ -105,6 +112,10 @@ export async function Overview() {
   const wpotw = real ? real.wpotw : { ...demoWpotw, live: false };
   const scorer = real ? real.scorer : { name: demoScorer.name, value: demoScorer.goals };
   const assister = real ? real.assister : { name: demoAssist.name, value: demoAssist.assists };
+  const seasonInfo = real?.season ?? (() => {
+    const s = seasonAt();
+    return { name: s.name, ends: s.end.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" }) };
+  })();
   const sync = real?.sync ?? null;
   return (
     <section className="mx-auto max-w-6xl px-4 pb-24 md:px-6 md:pb-36">
@@ -297,11 +308,15 @@ export async function Overview() {
           </Link>
         </Reveal>
 
-        {/* Golden boot */}
+        {/* Golden boot — current EA season */}
         <Reveal delay={0.05} className="col-span-1">
+          <Link href="/stats" className="block h-full">
           <TiltCard className="p-5">
             <div className="flex h-full flex-col justify-between gap-6">
-              <p className="eyebrow">Golden Boot</p>
+              <div>
+                <p className="eyebrow">Golden Boot</p>
+                <p className="mt-1 text-[11px] text-mute">{seasonInfo.name} · so far</p>
+              </div>
               <div>
                 <Ticker value={scorer?.value ?? 0} className="text-display block text-5xl" />
                 <p className="mt-2 truncate text-sm text-mute">
@@ -310,13 +325,18 @@ export async function Overview() {
               </div>
             </div>
           </TiltCard>
+          </Link>
         </Reveal>
 
-        {/* Playmaker */}
+        {/* Top assist — current EA season */}
         <Reveal delay={0.1} className="col-span-1">
+          <Link href="/stats" className="block h-full">
           <TiltCard className="p-5">
             <div className="flex h-full flex-col justify-between gap-6">
-              <p className="eyebrow">Playmaker</p>
+              <div>
+                <p className="eyebrow">Top Assist</p>
+                <p className="mt-1 text-[11px] text-mute">Ends {seasonInfo.ends}</p>
+              </div>
               <div>
                 <Ticker value={assister?.value ?? 0} className="text-display block text-5xl" />
                 <p className="mt-2 truncate text-sm text-mute">
@@ -325,6 +345,7 @@ export async function Overview() {
               </div>
             </div>
           </TiltCard>
+          </Link>
         </Reveal>
 
         {/* GOTW clip */}

@@ -135,10 +135,19 @@ const SCHEMA = [
   `UPDATE players SET secondary_positions = ARRAY(SELECT DISTINCT x FROM unnest(array_replace(array_replace(array_replace(secondary_positions,'CF','CAM'),'LWB','LB'),'RWB','RB')) x WHERE x <> primary_position)
      WHERE secondary_positions && ARRAY['CF','LWB','RWB']`,
   `UPDATE matchdays SET formation = '4-3-3 (2)' WHERE formation = '4-3-3 (5)'`,
+  // v6 — Web Push subscriptions (one row per device)
+  `CREATE TABLE IF NOT EXISTS push_subs (
+    endpoint text PRIMARY KEY,
+    player_id uuid NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    p256dh text NOT NULL,
+    auth text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS push_subs_player ON push_subs (player_id)`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 let ready: Promise<void> | null = null;
 
