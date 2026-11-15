@@ -25,6 +25,8 @@ export function BackLink({ href, label, className = "" }: { href: string; label:
         {ICON}
         {label}
       </Link>
+      {/* mobile: the pinned pill floats over the page, so leave it room */}
+      <span aria-hidden className="block h-8 md:hidden" />
       {mounted &&
         createPortal(
           <Link

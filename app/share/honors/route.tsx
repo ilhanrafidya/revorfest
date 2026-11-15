@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         ring={accent}
         nameSize={140}
         marginTop={110}
-        tint={gold ? "rgba(221,177,104,0.16)" : "rgba(255,69,58,0.15)"}
+        tint={gold ? "rgba(221,177,104,0.5)" : "rgba(255,69,58,0.45)"}
       />
       <div style={{ display: "flex", marginTop: "auto", marginBottom: 90 }}>
         <Stat label="RATING" value={line.avgRating.toFixed(1)} color={accent} />

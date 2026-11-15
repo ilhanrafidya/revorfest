@@ -148,7 +148,23 @@ export function Hero({
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", marginTop, width: "100%" }}>
       {number != null ? (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: -130, display: "flex", justifyContent: "center", fontSize: 620, fontWeight: 900, letterSpacing: -34, lineHeight: 1, color: tint }}>
+        <div
+          style={{
+            position: "absolute",
+            left: -70,
+            right: -70,
+            top: -size * 0.42,
+            display: "flex",
+            justifyContent: "center",
+            fontSize: Math.round(size * 1.9),
+            fontWeight: 900,
+            letterSpacing: -Math.round(size * 0.12),
+            lineHeight: 1,
+            color: "transparent",
+            backgroundImage: `linear-gradient(180deg, ${tint} 0%, ${tint.replace(/[\d.]+\)$/, "0.05)")} 62%, rgba(0,0,0,0) 80%)`,
+            backgroundClip: "text",
+          }}
+        >
           {String(number)}
         </div>
       ) : null}

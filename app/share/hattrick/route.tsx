@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   return story(
     <Frame crest={crest} eyebrow={title} accent={C.volt} glow="rgba(215,255,58,0.28)">
       <div style={{ display: "flex", marginTop: 14, fontSize: 30, color: C.mute }}>{when}</div>
-      <Hero avatar={av} name={name} gamertag={h.gamertag} number={p?.jersey_number ?? null} size={440} ring={C.volt} tint="rgba(215,255,58,0.1)" />
+      <Hero avatar={av} name={name} gamertag={h.gamertag} number={p?.jersey_number ?? null} size={440} ring={C.volt} tint="rgba(215,255,58,0.38)" />
       <div style={{ display: "flex", alignItems: "flex-end", marginTop: 60 }}>
         <div style={{ display: "flex", fontSize: 240, fontWeight: 800, letterSpacing: -10, lineHeight: 0.9, color: C.volt }}>{String(h.goals)}</div>
         <div style={{ display: "flex", fontSize: 44, fontWeight: 800, letterSpacing: 6, marginLeft: 20, marginBottom: 22 }}>{"GOALS"}</div>
