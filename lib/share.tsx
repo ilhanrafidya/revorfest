@@ -120,6 +120,25 @@ export function Stat({ label, value, width = 230, color = C.chalk }: { label: st
   );
 }
 
+type El = { $$typeof: symbol; type: unknown; key: unknown; props: Record<string, unknown> };
+
+/**
+ * Satori in Next's ImageResponse chokes on custom function components ("a is not iterable"),
+ * so expand them into plain host elements and drop empty children before rendering.
+ */
+function resolve(n: unknown): unknown {
+  if (Array.isArray(n)) return n.map(resolve).filter((c) => c !== null && c !== undefined && c !== false && c !== true && c !== "");
+  if (n && typeof n === "object" && "type" in n && "props" in n) {
+    const el = n as El;
+    if (typeof el.type === "function") return resolve((el.type as (p: unknown) => unknown)(el.props));
+    const { children, ...rest } = el.props ?? {};
+    const kids = children === undefined ? undefined : resolve(children);
+    const flat = Array.isArray(kids) ? (kids.length === 0 ? undefined : kids.length === 1 ? kids[0] : kids) : kids;
+    return { ...el, props: flat === undefined ? rest : { ...rest, children: flat } };
+  }
+  return n === false || n === true ? null : n;
+}
+
 export function story(node: ReactNode) {
-  return new ImageResponse(node as React.ReactElement, { ...STORY, headers: { "cache-control": "no-store" } });
+  return new ImageResponse(resolve(node) as React.ReactElement, { ...STORY, headers: { "cache-control": "no-store" } });
 }
