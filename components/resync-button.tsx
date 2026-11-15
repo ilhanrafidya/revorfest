@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type Status = { triggeredAt: string | null; lastSyncAt: string | null; running: boolean; cooldownUntil: string | null; configured: boolean };
 
 const EXPECTED_MS = 120_000;
-const R = 20;
+const R = 16.75; // ring sits exactly on the 36px button edge
 const C = 2 * Math.PI * R;
 
 function mmss(ms: number) {
@@ -91,17 +91,17 @@ export function ResyncButton({ variant }: { variant: "mobile" | "desktop" }) {
 
   const label = running ? "Syncing with EA…" : done ? "Synced" : cooling ? `Next sync in ${mmss(cooldownLeft)}` : "Sync with EA now";
 
-  const icon = (
-    <span className="relative grid size-11 place-items-center">
-      <svg viewBox="0 0 48 48" className="absolute inset-0 size-full -rotate-90" aria-hidden>
-        <circle cx="24" cy="24" r={R} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
+  // Ring + icon, drawn at exactly the button's size (36px) so nothing drifts.
+  const inner = (
+    <>
+      <svg viewBox="0 0 36 36" className="pointer-events-none absolute inset-0 size-full -rotate-90" aria-hidden>
         <circle
-          cx="24"
-          cy="24"
+          cx="18"
+          cy="18"
           r={R}
           fill="none"
           stroke="white"
-          strokeWidth="2.25"
+          strokeWidth="1.75"
           strokeLinecap="round"
           strokeDasharray={C}
           strokeDashoffset={C * (1 - progress)}
@@ -110,14 +110,14 @@ export function ResyncButton({ variant }: { variant: "mobile" | "desktop" }) {
       </svg>
       <AnimatePresence mode="wait" initial={false}>
         {done ? (
-          <m.svg key="ok" viewBox="0 0 24 24" className="size-5 text-accent" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
+          <m.svg key="ok" viewBox="0 0 24 24" className="size-[18px] text-accent" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </m.svg>
         ) : (
           <m.svg
             key="sync"
             viewBox="0 0 24 24"
-            className={`size-5 ${cooling ? "text-mute" : "text-chalk"}`}
+            className={`size-[18px] ${cooling ? "text-mute" : "text-chalk"}`}
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -132,7 +132,7 @@ export function ResyncButton({ variant }: { variant: "mobile" | "desktop" }) {
           </m.svg>
         )}
       </AnimatePresence>
-    </span>
+    </>
   );
 
   if (variant === "desktop") {
@@ -144,9 +144,9 @@ export function ResyncButton({ variant }: { variant: "mobile" | "desktop" }) {
           disabled={running || cooling}
           title={label}
           aria-label={label}
-          className="flex items-center gap-1 rounded-full pr-2 text-sm text-mute transition hover:text-chalk disabled:cursor-default"
+          className="flex items-center gap-2 rounded-full pr-1 text-sm text-mute transition hover:text-chalk disabled:cursor-default"
         >
-          <span className="scale-[0.82]">{icon}</span>
+          <span className="relative grid size-9 place-items-center rounded-full bg-white/[0.06]">{inner}</span>
           {(running || cooling || done) && <span className="tabular-nums">{running ? "Syncing" : done ? "Synced" : mmss(cooldownLeft)}</span>}
         </button>
         <Toast msg={msg} align="right" />
@@ -161,9 +161,9 @@ export function ResyncButton({ variant }: { variant: "mobile" | "desktop" }) {
         onClick={go}
         disabled={running || cooling}
         aria-label={label}
-        className="glass hairline grid size-9 place-items-center rounded-full shadow-xl shadow-black/50 transition active:scale-95 disabled:active:scale-100"
+        className="glass relative grid size-9 place-items-center rounded-full ring-1 ring-white/10 shadow-xl shadow-black/50 transition active:scale-95 disabled:active:scale-100"
       >
-        <span className="scale-[0.82]">{icon}</span>
+        {inner}
       </button>
       <AnimatePresence>
         {cooling && (
