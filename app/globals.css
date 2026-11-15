@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* ── Revorfest design tokens ─────────────────────────────── */
+@theme {
+  --color-pitch: #000000;
+  --color-carbon: #111113;
+  --color-carbon-2: #1c1c1f;
+  --color-chalk: #f5f5f7;
+  --color-mute: #86868b;
+  --color-volt: #d7ff3a;
+  --color-revor: #3d6fd9;
+  --color-midnight: #07072e;
+  --color-indigo-kit: #2a2f8f;
+  --color-gold: #ddb168;
+  --color-depleted: #ff453a;
+
+  --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-on-accent: var(--on-accent);
+  --color-glow: var(--glow);
+}
+
+/* Kit-aware theme: the active matchday kit re-tints the accent layer */
+:root,
+[data-kit="away"] {
+  --accent: #d7ff3a;
+  --accent-2: #3d6fd9;
+  --on-accent: #000000;
+  --glow: #3d6fd9;
+}
+[data-kit="home"] {
+  --accent: #f5f5f7;
+  --accent-2: #86868b;
+  --on-accent: #000000;
+  --glow: #48484a;
+}
+[data-kit="third"] {
+  --accent: #8f96ff;
+  --accent-2: #2a2f8f;
+  --on-accent: #07072e;
+  --glow: #2e3388;
+}
+
+html {
+  background: #000;
+  color: var(--color-chalk);
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-feature-settings: "cv11";
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ── Utilities ───────────────────────────────────────────── */
+@utility text-display {
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+@utility eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-mute);
+}
+
+@utility glass {
+  background: rgb(24 24 27 / 0.68);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+}
+
+@utility hairline {
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+@utility tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--color-carbon);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
