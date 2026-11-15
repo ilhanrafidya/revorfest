@@ -74,16 +74,71 @@ export function ClipTrimmer({ src, onChange }: { src: string; onChange: (r: { st
     const v = ref.current;
     if (!v) return;
     const tick = () => {
-      if (v.currentTime < start || v.currentTime >= end) v.currentTime = start;
+      if (drag.current) return;
+      if (v.currentTime < start - 0.25 || v.currentTime >= end) v.currentTime = start;
     };
     v.addEventListener("timeupdate", tick);
     return () => v.removeEventListener("timeupdate", tick);
   }, [start, end]);
 
-  useEffect(() => {
+
+  // ---- custom drag (native range inputs on iOS only move when you hit the tiny thumb) ----
+  const track = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ grab: number; id: number; at: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const lastSeek = useRef(0);
+
+  function secAt(clientX: number) {
+    const r = track.current!.getBoundingClientRect();
+    return ((clientX - r.left) / r.width) * dur;
+  }
+  function clampStart(s: number) {
+    return Math.min(Math.max(0, s), Math.max(0, dur - L));
+  }
+  function seekPreview(t: number, force = false) {
     const v = ref.current;
-    if (v && dur) v.currentTime = start;
-  }, [start, dur]);
+    if (!v) return;
+    const now = performance.now();
+    if (!force && now - lastSeek.current < 120) return; // throttle seeks while dragging
+    lastSeek.current = now;
+    const fast = (v as HTMLVideoElement & { fastSeek?: (t: number) => void }).fastSeek;
+    if (fast && !force) fast.call(v, t);
+    else v.currentTime = t;
+  }
+  function onDown(e: React.PointerEvent) {
+    if (!dur) return;
+    const t = secAt(e.clientX);
+    // grabbing inside the window keeps the finger's offset; tapping outside centres the window there
+    const inside = t >= start && t <= start + L;
+    const grab = inside ? t - start : L / 2;
+    if (!inside) {
+      const ns = clampStart(t - grab);
+      setStart(ns);
+      seekPreview(ns, true);
+    }
+    drag.current = { grab, id: e.pointerId, at: inside ? start : clampStart(t - grab) };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    ref.current?.pause();
+    setDragging(true);
+  }
+  function onMove(e: React.PointerEvent) {
+    if (!drag.current || drag.current.id !== e.pointerId) return;
+    const ns = clampStart(secAt(e.clientX) - drag.current.grab);
+    drag.current.at = ns;
+    setStart(ns);
+    seekPreview(ns);
+  }
+  function onUp(e: React.PointerEvent) {
+    if (!drag.current || drag.current.id !== e.pointerId) return;
+    const at = drag.current.at;
+    drag.current = null;
+    setDragging(false);
+    const v = ref.current;
+    if (v) {
+      v.currentTime = at;
+      v.play().catch(() => null);
+    }
+  }
 
   const left = dur ? (start / dur) * 100 : 0;
   const width = dur ? (L / dur) * 100 : 100;
@@ -108,38 +163,37 @@ export function ClipTrimmer({ src, onChange }: { src: string; onChange: (r: { st
       </div>
       {dur > 0 && (
         <>
-          <div className="relative h-14 select-none overflow-hidden rounded-xl bg-white/[0.06]">
+          <div
+            ref={track}
+            onPointerDown={onDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            className={`relative h-14 touch-none select-none overflow-hidden rounded-xl bg-white/[0.06] ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+            style={{ WebkitUserSelect: "none" }}
+          >
             {/* filmstrip */}
             <div className="absolute inset-0 flex">
               {Array.from({ length: FRAMES }, (_, i) =>
                 frames[i] ? (
-                  <img key={i} src={frames[i]} alt="" className="h-full min-w-0 flex-1 object-cover" draggable={false} />
+                  <img key={i} src={frames[i]} alt="" className="pointer-events-none h-full min-w-0 flex-1 object-cover" draggable={false} />
                 ) : (
                   <span key={i} className="h-full flex-1 animate-pulse bg-white/[0.05]" />
                 ),
               )}
             </div>
             {/* dim everything outside the chosen part */}
-            <div className="absolute inset-y-0 left-0 bg-black/65" style={{ width: `${left}%` }} />
-            <div className="absolute inset-y-0 right-0 bg-black/65" style={{ width: `${Math.max(0, 100 - left - width)}%` }} />
+            <div className="pointer-events-none absolute inset-y-0 left-0 bg-black/65" style={{ width: `${left}%` }} />
+            <div className="pointer-events-none absolute inset-y-0 right-0 bg-black/65" style={{ width: `${Math.max(0, 100 - left - width)}%` }} />
             {/* chosen part */}
             <div
-              className="pointer-events-none absolute inset-y-0 rounded-xl border-[3px] border-accent shadow-[0_0_0_1px_rgba(0,0,0,0.4),0_0_18px_color-mix(in_oklab,var(--accent)_45%,transparent)]"
+              className={`pointer-events-none absolute inset-y-0 rounded-xl border-[3px] border-accent shadow-[0_0_0_1px_rgba(0,0,0,0.4),0_0_18px_color-mix(in_oklab,var(--accent)_45%,transparent)] transition-transform ${dragging ? "scale-y-[1.04]" : ""}`}
               style={{ left: `${left}%`, width: `${width}%` }}
             >
               <span className="absolute inset-y-2 left-0.5 w-1 rounded-full bg-accent" />
               <span className="absolute inset-y-2 right-0.5 w-1 rounded-full bg-accent" />
             </div>
-            <input
-              type="range"
-              aria-label="Clip start"
-              min={0}
-              max={Math.max(0, dur - L)}
-              step={0.1}
-              value={start}
-              onChange={(e) => setStart(Number(e.target.value))}
-              className="absolute inset-0 size-full cursor-grab opacity-0"
-            />
+
           </div>
           <div className="flex items-center justify-between text-xs text-mute">
             <span className="tabular-nums">
@@ -166,7 +220,7 @@ export function ClipTrimmer({ src, onChange }: { src: string; onChange: (r: { st
               />
             </label>
           )}
-          <p className="text-xs text-mute">Slide along the strip to pick your moment · max {MAX_CLIP_SEC}s</p>
+          <p className="text-xs text-mute">Drag the box (or tap the strip) to pick your moment · max {MAX_CLIP_SEC}s</p>
         </>
       )}
     </div>
