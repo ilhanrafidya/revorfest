@@ -11,6 +11,7 @@ import { rangeTable } from "@/lib/honors";
 import { finishedSeasons, seasonAt } from "@/lib/seasons";
 import { Countdown } from "@/components/countdown";
 import { seasonWinners, MIN_SEASON_MATCHES } from "@/lib/awards";
+import { db } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Stats" };
 
@@ -28,6 +29,11 @@ export default async function StatsPage() {
     rangeTable(season.start, new Date()),
     lastSeason ? rangeTable(lastSeason.start, lastSeason.end) : Promise.resolve([]),
   ]);
+  const [wk] = (await db()`SELECT count(*) FILTER (WHERE result = 'W')::int AS w, count(*) FILTER (WHERE result = 'D')::int AS d,
+                                 count(*) FILTER (WHERE result = 'L')::int AS l, coalesce(sum(goals_for), 0)::int AS gf, coalesce(sum(goals_against), 0)::int AS ga
+                          FROM ea_matches WHERE played_at >= ${lastWeek.toISOString()} AND played_at < ${thisWeek.toISOString()}`) as {
+    w: number; d: number; l: number; gf: number; ga: number;
+  }[];
   const lastWinners = lastSeason ? seasonWinners(lastTable) : null;
   const race = seasonWinners(seasonTable);
   const seasonEnds = season.end.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Asia/Jakarta" });
@@ -53,8 +59,36 @@ export default async function StatsPage() {
           <HonorCard kind="potw" line={prev.potw} weekKey={prev.key} />
           <HonorCard kind="wpotw" line={prev.wpotw} weekKey={prev.key} />
         </div>
-        {prev.table.length > 0 && (
-          <ShareButton url={`/share/week?week=${prev.key}`} filename={`revorfest-week-${prev.key}.png`} title="Revorfest weekly recap" className="mt-4 glass hairline" />
+        {prev.table.length > 0 && wk && wk.w + wk.d + wk.l > 0 && (
+          <div className="tile mt-3 flex flex-col gap-4 p-5 md:mt-4 md:flex-row md:items-center md:p-6">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent">
+                <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+                  <path d="M3.5 9.5h17M8 3v3M16 3v3M8 14h3M8 17h6" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <p className="eyebrow">Weekly recap</p>
+                <p className="mt-0.5 truncate text-base font-semibold">{prev.label}</p>
+                <div className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold tabular-nums">
+                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">{wk.w}W</span>
+                  <span className="rounded-full bg-white/[0.08] px-2 py-0.5">{wk.d}D</span>
+                  <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-red-400">{wk.l}L</span>
+                  <span className="ml-1 font-normal text-mute">
+                    {wk.gf}:{wk.ga} · results, top scorer & POTW in one story
+                  </span>
+                </div>
+              </div>
+            </div>
+            <ShareButton
+              url={`/share/week?week=${prev.key}`}
+              filename={`revorfest-week-${prev.key}.png`}
+              title="Revorfest weekly recap"
+              label="Share weekly recap"
+              className="justify-center bg-accent py-2.5 text-on-accent md:shrink-0"
+            />
+          </div>
         )}
       </Reveal>
 
