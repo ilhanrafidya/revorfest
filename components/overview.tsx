@@ -173,15 +173,10 @@ export async function Overview() {
 
         {/* POTW */}
         <Reveal className="col-span-2 md:row-span-2">
-          <TiltCard className="p-6 md:p-8 ring-1 ring-gold/25">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(80% 60% at 85% 0%, rgb(217 180 90 / 0.22), transparent 70%), radial-gradient(60% 50% at 0% 100%, rgb(217 180 90 / 0.08), transparent 70%)",
-              }}
-            />
+          <TiltCard
+            className="p-6 ring-1 ring-gold/25 md:p-8"
+            background="radial-gradient(80% 60% at 85% 0%, rgb(221 177 104 / 0.22), transparent 70%), radial-gradient(60% 50% at 0% 100%, rgb(221 177 104 / 0.08), transparent 70%)"
+          >
             <div className="relative flex h-full flex-col justify-between gap-8">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-gold">{potw?.live ? "Leading this week" : "Player of the Week"}</p>
@@ -311,7 +306,7 @@ export async function Overview() {
 
         {/* WPOTW */}
         <Reveal delay={0.05} className="col-span-1">
-          <TiltCard className="p-5 ring-1 ring-depleted/20">
+          <TiltCard className="p-5 ring-1 ring-depleted/20" background="radial-gradient(90% 70% at 100% 0%, rgb(255 69 58 / 0.14), transparent 70%)">
             <div className="flex h-full flex-col justify-between gap-6">
               <p className="text-[13px] font-semibold text-depleted">Stamina depleted</p>
               <div>

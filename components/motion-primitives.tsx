@@ -74,10 +74,13 @@ export function TiltCard({
   children,
   className = "",
   glow = true,
+  background,
 }: {
   children: ReactNode;
   className?: string;
   glow?: boolean;
+  /** CSS background painted edge-to-edge behind the card content (ignores padding). */
+  background?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const rx = useMotionValue(0);
@@ -110,6 +113,7 @@ export function TiltCard({
       style={{ rotateX: srx, rotateY: sry, transformPerspective: 1000 }}
       className={`tile group h-full will-change-transform ${className}`}
     >
+      {background && <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit]" style={{ background }} />}
       {glow && (
         <div
           aria-hidden
