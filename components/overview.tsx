@@ -96,17 +96,21 @@ function Initials({ name, className = "" }: { name: string; className?: string }
   );
 }
 
-/** Pro Clubs league runs Div 1 (top) to Div 5 (bottom); EA sometimes reports 6+ for unplaced clubs. */
+/**
+ * EA's API counts six tiers: 1 = Elite, 2 = Division 1 … 6 = Division 5 (see finishesInDivision1…6).
+ * In-game it reads Division 5 → 1 → Elite, so shift by one. 0 here means Elite.
+ */
 function clampDiv(d: number | null) {
-  return d == null ? null : Math.min(Math.max(d, 1), 5);
+  return d == null ? null : Math.min(Math.max(d - 1, 0), 5);
 }
+const divLabel = (d: number) => (d === 0 ? "Elite" : `Division ${d}`);
 
 export async function Overview() {
   const [real, extras] = await Promise.all([loadOverview(), loadExtras()]);
   const club = real?.club ?? {
     ...demo,
-    division: 5,
-    bestDivision: 5,
+    division: 4,
+    bestDivision: 4,
     lastMatch: demo.lastMatch,
   };
   const potw = real ? real.potw : { ...demoPotw, avatar: null, live: false };
@@ -191,13 +195,19 @@ export async function Overview() {
             <div className="flex h-full flex-col justify-between gap-6">
               <p className="eyebrow">Division</p>
               <div>
-                {club.division != null ? (
+                {club.division === 0 ? (
+                  <span className="text-display text-gradient block text-5xl">Elite</span>
+                ) : club.division != null ? (
                   <Ticker value={club.division} className="text-display block text-5xl" />
                 ) : (
                   <span className="text-display block text-5xl text-mute">—</span>
                 )}
                 <p className="mt-2 text-sm text-accent transition-colors duration-700">
-                  {club.bestDivision != null ? `Best: Division ${club.bestDivision}` : "EA league"}
+                  {club.bestDivision != null && club.division != null && club.bestDivision < club.division
+                    ? `Best: ${divLabel(club.bestDivision)}`
+                    : club.division != null && club.division >= 1
+                      ? `Next up: ${divLabel(club.division - 1)}`
+                      : "EA league"}
                 </p>
               </div>
             </div>
