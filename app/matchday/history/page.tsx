@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { Reveal } from "@/components/motion-primitives";
 import { ShareButton } from "@/components/share-button";
 import { formationSlots } from "@/lib/formations";
@@ -22,9 +22,7 @@ export default async function MatchdayHistory() {
   return (
     <section className="mx-auto max-w-4xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
       <Reveal blur className="px-1 pb-10">
-        <Link href="/matchday" className="text-sm font-semibold text-accent">
-          ← Matchday
-        </Link>
+        <BackLink href="/matchday" label="Matchday" />
         <p className="eyebrow mt-6">History</p>
         <h1 className="text-display mt-3 text-5xl md:text-7xl">
           Every lineup.

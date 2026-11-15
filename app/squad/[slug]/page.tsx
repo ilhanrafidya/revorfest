@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/motion-primitives";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -38,12 +39,7 @@ export default async function PlayerPage({
       </span>
 
       <Reveal className="relative mb-8">
-        <Link href="/squad" className="glass hairline inline-flex items-center gap-1.5 rounded-full py-2 pl-3 pr-4 text-sm font-semibold transition active:scale-95">
-          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Squad
-        </Link>
+        <BackLink href="/squad" label="Squad" />
       </Reveal>
 
       {welcome && isMe && (

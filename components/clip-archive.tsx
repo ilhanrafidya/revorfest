@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "./back-link";
 import { ClipPlayer } from "./clip-card";
 import { Reveal } from "./motion-primitives";
 import type { Winner } from "@/lib/clips";
@@ -7,9 +8,7 @@ export function ClipArchive({ kind, items }: { kind: "gotw" | "notw"; items: Win
   const fame = kind === "gotw";
   return (
     <section className="mx-auto max-w-6xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
-      <Link href={fame ? "/showdown" : "/showdown?cat=notw"} className="text-sm text-mute hover:text-chalk">
-        ← Showdown
-      </Link>
+      <BackLink href={fame ? "/showdown" : "/showdown?cat=notw"} label="Showdown" />
       <Reveal blur className="mt-6 px-1">
         <p className={`text-sm font-semibold ${fame ? "text-gold" : "text-depleted"}`}>{fame ? "Goal of the Week winners" : "Nyunda of the Week winners"}</p>
         <h1 className="text-display mt-3 text-5xl md:text-7xl">{fame ? "Hall of Fame." : "Wall of Shame."}</h1>

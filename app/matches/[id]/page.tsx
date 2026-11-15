@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { Reveal } from "@/components/motion-primitives";
 import { ResultPill, WhoLink } from "@/components/stat-bits";
@@ -16,9 +16,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
   return (
     <section className="mx-auto max-w-4xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
-      <Link href="/stats" className="text-sm text-mute hover:text-chalk">
-        ← Stats
-      </Link>
+      <BackLink href="/stats" label="Stats" />
 
       <Reveal blur className="mt-6 text-center">
         <p className="eyebrow">
