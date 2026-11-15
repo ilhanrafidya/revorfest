@@ -28,6 +28,7 @@ export async function submitClip(category: string, url: string, caption: string,
   const [{ n }] = (await sql`SELECT count(*)::int AS n FROM clips WHERE week_key = ${w.key} AND category = ${category} AND submitted_by = ${me.id}`) as { n: number }[];
   if (n >= MAX_PER_WEEK) return { ok: false, error: `Max ${MAX_PER_WEEK} clips per category per week.` };
   const feat = /^[0-9a-f-]{36}$/i.test(featuring) ? featuring : null;
+  if (!feat) return { ok: false, error: "Pick who it's dedicated to — they get the award if it wins." };
   await sql`INSERT INTO clips (week_key, category, submitted_by, featuring, url, provider, embed_id, caption)
             VALUES (${w.key}, ${category}, ${me.id}, ${feat}, ${url.trim()}, ${parsed.provider}, ${parsed.id}, ${caption.trim().slice(0, 120) || null})`;
   revalidatePath("/showdown");

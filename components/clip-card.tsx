@@ -96,7 +96,7 @@ export function ClipCard({
             {clip.featuring && (
               <>
                 {" "}
-                · starring{" "}
+                · dedicated to{" "}
                 <Link href={`/squad/${clip.featuring.slug}`} className="text-chalk hover:text-accent">
                   {clip.featuring.name}
                 </Link>

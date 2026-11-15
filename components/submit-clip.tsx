@@ -112,7 +112,14 @@ export function SubmitClip({ category, players }: { category: "gotw" | "notw"; p
 
       {mode === "upload" ? (
         src ? (
-          <ClipTrimmer src={src} onChange={onRange} />
+          <div className="space-y-3">
+            <ClipTrimmer src={src} onChange={onRange} />
+            {!busy && (
+              <button type="button" onClick={() => fileRef.current?.click()} className="text-sm font-semibold text-accent">
+                Choose a different video
+              </button>
+            )}
+          </div>
         ) : (
           <button
             type="button"
@@ -150,9 +157,11 @@ export function SubmitClip({ category, players }: { category: "gotw" | "notw"; p
       <Field label="One-line banter" hint="Max 120 characters.">
         <Input value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={120} placeholder={category === "gotw" ? "Top bins from 30 yards 🔥" : "Missed an open goal. Again."} />
       </Field>
-      <Field label="Who's in it? (optional)">
-        <select value={featuring} onChange={(e) => setFeaturing(e.target.value)} className="hairline w-full rounded-2xl bg-white/[0.05] px-4 py-3.5 text-base">
-          <option value="">—</option>
+      <Field label="Dedicated to" hint={category === "gotw" ? "They take the Goal of the Week if it wins." : "They wear the Nyunda of the Week crown if it wins 😭"}>
+        <select value={featuring} onChange={(e) => setFeaturing(e.target.value)} className={`hairline w-full rounded-2xl bg-white/[0.05] px-4 py-3.5 text-base ${featuring ? "" : "text-mute"}`}>
+          <option value="" disabled>
+            Pick a teammate
+          </option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
               #{p.number} {p.name}
@@ -171,24 +180,19 @@ export function SubmitClip({ category, players }: { category: "gotw" | "notw"; p
       )}
       <ErrorText>{error}</ErrorText>
       <div className="flex gap-3">
-        <Button variant="ghost" disabled={busy} onClick={reset}>
+        <Button variant="ghost" className="shrink-0" disabled={busy} onClick={reset}>
           Cancel
         </Button>
         {mode === "upload" ? (
           <>
-            {src && !busy && (
-              <Button variant="ghost" onClick={() => fileRef.current?.click()}>
-                Change
-              </Button>
-            )}
-            <Button className="flex-1" disabled={!src || busy} onClick={submitUpload}>
+            <Button className="flex-1 whitespace-nowrap" disabled={!src || !featuring || busy} onClick={submitUpload}>
               {stage === "trimming" ? "Trimming…" : stage === "uploading" ? "Uploading…" : "Submit clip"}
             </Button>
           </>
         ) : (
           <Button
-            className="flex-1"
-            disabled={!parseClipUrl(url) || busy}
+            className="flex-1 whitespace-nowrap"
+            disabled={!parseClipUrl(url) || !featuring || busy}
             onClick={() =>
               startTransition(async () => {
                 const res = await submitClip(category, url, caption, featuring);

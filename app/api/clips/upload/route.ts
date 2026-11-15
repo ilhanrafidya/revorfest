@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   if (!(video instanceof File) || !/^video\/(mp4|webm|quicktime)/.test(video.type || "video/mp4")) return Response.json({ error: "That's not a video." }, { status: 400 });
   if (video.size > MAX_BYTES) return Response.json({ error: "Clip is too big — pick a shorter part." }, { status: 413 });
   if (category !== "gotw" && category !== "notw") return Response.json({ error: "Pick a category." }, { status: 400 });
+  if (!/^[0-9a-f-]{36}$/i.test(featuring)) return Response.json({ error: "Pick who it's dedicated to — they get the award if it wins." }, { status: 400 });
 
   await ensureSchema();
   const w = windowState();
