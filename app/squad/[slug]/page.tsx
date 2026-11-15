@@ -9,6 +9,8 @@ import { currentPlayer } from "@/lib/session";
 import { memberStats, recentRatings } from "@/lib/stats";
 import { ResultPill } from "@/components/stat-bits";
 import { ViewCardButton } from "@/components/view-card-button";
+import { TrophyCabinet } from "@/components/trophy-cabinet";
+import { allAwards, hattricks, milestonesFor } from "@/lib/awards";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getPlayerBySlug((await params).slug);
@@ -25,7 +27,7 @@ export default async function PlayerPage({
   const [{ slug }, { welcome }] = await Promise.all([params, searchParams]);
   const [p, me] = await Promise.all([getPlayerBySlug(slug), currentPlayer()]);
   if (!p) notFound();
-  const [ea, recent] = await Promise.all([memberStats(p.ea_gamertag), recentRatings(p.ea_gamertag)]);
+  const [ea, recent, awards, tricks] = await Promise.all([memberStats(p.ea_gamertag), recentRatings(p.ea_gamertag), allAwards(), hattricks(p.ea_gamertag)]);
   const isMe = me?.id === p.id;
   const joined = new Date(p.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
@@ -99,6 +101,10 @@ export default async function PlayerPage({
           ? `Club career stats from EA · ${ea.motm} Man of the Match · ${ea.cleanSheets} clean sheets`
           : `No EA stats found for "${p.ea_gamertag}" yet — check the EA ID matches in-game exactly.`}
       </p>
+
+      <Reveal className="relative mt-12">
+        <TrophyCabinet slug={p.slug} name={p.display_name} awards={awards.get(p.id) ?? null} hattricks={tricks} milestones={milestonesFor(ea)} />
+      </Reveal>
 
       {recent.length > 0 && (
         <Reveal className="relative mt-10">

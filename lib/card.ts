@@ -30,7 +30,7 @@ export async function cardFor(p: PlayerCard, awardsMap?: Map<string, PlayerAward
         rating: career.ratingAve || null,
       };
   }
-  const a = awards.get(p.id) ?? { potw: 0, weak: 0, season: [] };
+  const a = awards.get(p.id) ?? { potw: 0, weak: 0, potwWeeks: [], weakWeeks: [], season: [] };
   return {
     slug: p.slug,
     name: p.display_name,

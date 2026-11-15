@@ -8,7 +8,8 @@ import { MIN_MATCHES, honorsFor, weekStart, type WeeklyLine } from "@/lib/honors
 import { MATCH_TYPE_LABEL, matchDate, timeAgo } from "@/lib/format";
 import { lastSync, leaderboards, recentMatches, type BoardEntry } from "@/lib/stats";
 import { rangeTable } from "@/lib/honors";
-import { seasonAt } from "@/lib/seasons";
+import { finishedSeasons, seasonAt } from "@/lib/seasons";
+import { Countdown } from "@/components/countdown";
 import { seasonWinners, MIN_SEASON_MATCHES } from "@/lib/awards";
 
 export const metadata: Metadata = { title: "Stats" };
@@ -17,14 +18,17 @@ export default async function StatsPage() {
   const thisWeek = weekStart();
   const lastWeek = new Date(thisWeek.getTime() - 7 * 86400000);
   const season = seasonAt();
-  const [sync, boards, matches, now, prev, seasonTable] = await Promise.all([
+  const lastSeason = finishedSeasons()[0] ?? null;
+  const [sync, boards, matches, now, prev, seasonTable, lastTable] = await Promise.all([
     lastSync(),
     leaderboards(),
     recentMatches(15),
     honorsFor(thisWeek),
     honorsFor(lastWeek),
     rangeTable(season.start, new Date()),
+    lastSeason ? rangeTable(lastSeason.start, lastSeason.end) : Promise.resolve([]),
   ]);
+  const lastWinners = lastSeason ? seasonWinners(lastTable) : null;
   const race = seasonWinners(seasonTable);
   const seasonEnds = season.end.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Asia/Jakarta" });
 
@@ -75,11 +79,46 @@ export default async function StatsPage() {
             </div>
           ))}
         </div>
-        {(race.pots || race.boot || race.assist) && (
-          <ShareButton url={`/share/season?n=${season.n}`} filename={`revorfest-season-${season.n}.png`} title={`Revorfest ${season.name}`} className="mt-4 bg-gold/15 text-gold" />
-        )}
-        <p className="mt-3 text-xs text-mute">Follows EA&apos;s FC 27 season calendar. Winners lock in automatically when the season rolls over.</p>
+        <div className="tile mt-4 flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold">Awards unlock when {season.name} ends</p>
+            <p className="text-xs text-mute">Follows EA&apos;s FC 27 calendar · winners lock in automatically, then each award gets its own story to share.</p>
+          </div>
+          <Countdown to={season.end.toISOString()} />
+        </div>
       </Reveal>
+
+      {lastSeason && lastWinners && (lastWinners.pots || lastWinners.boot || lastWinners.assist) && (
+        <Reveal className="mt-14">
+          <SectionTitle eyebrow="Hall of honours" title={`${lastSeason.name} awards`} />
+          <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+            {[
+              { kind: "pots", k: "Player of the Season", l: lastWinners.pots, v: lastWinners.pots ? `${lastWinners.pots.avgRating.toFixed(1)} avg rating` : "" },
+              { kind: "boot", k: "Golden Boot", l: lastWinners.boot, v: lastWinners.boot ? `${lastWinners.boot.goals} goals` : "" },
+              { kind: "assist", k: "Top Assist", l: lastWinners.assist, v: lastWinners.assist ? `${lastWinners.assist.assists} assists` : "" },
+            ].map((x) =>
+              x.l ? (
+                <div key={x.kind} className="tile p-5 ring-1 ring-gold/30">
+                  <p className="text-sm font-semibold text-gold">{x.k}</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <PlayerAvatar name={x.l.name} src={x.l.avatar} className="size-14 text-base" />
+                    <div className="min-w-0">
+                      <p className="truncate text-2xl font-semibold">{x.l.name}</p>
+                      <p className="text-xs text-mute">{x.v}</p>
+                    </div>
+                  </div>
+                  <ShareButton
+                    url={`/share/award?kind=${x.kind}&season=${lastSeason.n}`}
+                    filename={`revorfest-${x.kind}-s${lastSeason.n}.png`}
+                    title={`Revorfest ${x.k}`}
+                    className="mt-4 bg-gold/15 text-gold"
+                  />
+                </div>
+              ) : null,
+            )}
+          </div>
+        </Reveal>
+      )}
 
       <Reveal className="mt-14">
         <SectionTitle eyebrow="Live race" title={`This week · ${now.label}`} />

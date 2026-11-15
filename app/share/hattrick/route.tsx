@@ -1,0 +1,43 @@
+import { hattricks } from "@/lib/awards";
+import { db } from "@/lib/db";
+import { Avatar, C, Frame, asset, avatarData, story } from "@/lib/share";
+
+export async function GET(req: Request) {
+  const u = new URL(req.url);
+  const matchId = u.searchParams.get("match") ?? "";
+  const tag = u.searchParams.get("tag") ?? "";
+  const h = (await hattricks(tag)).find((x) => x.matchId === matchId);
+  if (!h) return new Response("No hattrick", { status: 404 });
+  const [p] = (await db()`SELECT id, display_name, jersey_number FROM players WHERE lower(ea_gamertag) = lower(${tag}) AND active`) as {
+    id: string;
+    display_name: string;
+    jersey_number: number;
+  }[];
+  const name = p?.display_name ?? h.gamertag;
+  const [crest, av] = await Promise.all([asset(req, "/brand/crest.png"), avatarData(p?.id ?? null)]);
+  const when = new Date(h.playedAt).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
+  const title = h.goals >= 5 ? "FIVE-STAR SHOW" : h.goals === 4 ? "POKER" : "HATTRICK HERO";
+  const res = h.gf > h.ga ? "W" : h.gf < h.ga ? "L" : "D";
+
+  return story(
+    <Frame crest={crest} eyebrow={title} accent={C.volt} glow="rgba(215,255,58,0.28)">
+      <div style={{ display: "flex", marginTop: 14, fontSize: 30, color: C.mute }}>{when}</div>
+      <div style={{ display: "flex", marginTop: 90 }}>
+        <Avatar src={av} name={name} size={440} ring={C.volt} />
+      </div>
+      <div style={{ display: "flex", marginTop: 50, fontSize: 130, fontWeight: 800, letterSpacing: -5, lineHeight: 1 }}>{name}</div>
+      {p && <div style={{ display: "flex", marginTop: 14, fontSize: 32, color: C.mute }}>{`#${p.jersey_number}`}</div>}
+      <div style={{ display: "flex", alignItems: "flex-end", marginTop: 60 }}>
+        <div style={{ display: "flex", fontSize: 240, fontWeight: 800, letterSpacing: -10, lineHeight: 0.9, color: C.volt }}>{String(h.goals)}</div>
+        <div style={{ display: "flex", fontSize: 44, fontWeight: 800, letterSpacing: 6, marginLeft: 20, marginBottom: 22 }}>{"GOALS"}</div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "auto", marginBottom: 60, width: 920, borderRadius: 40, background: "rgba(255,255,255,0.06)", padding: "30px 40px" }}>
+        <div style={{ display: "flex", fontSize: 26, letterSpacing: 6, color: C.mute }}>{"FULL TIME"}</div>
+        <div style={{ display: "flex", alignItems: "center", marginTop: 10, fontSize: 52, fontWeight: 800 }}>
+          <div style={{ display: "flex" }}>{`Revorfest ${h.gf}–${h.ga} ${h.opponent.length > 16 ? `${h.opponent.slice(0, 15)}…` : h.opponent}`}</div>
+          <div style={{ display: "flex", marginLeft: 20, fontSize: 30, padding: "4px 16px", borderRadius: 30, background: res === "W" ? C.volt : res === "L" ? C.red : "rgba(255,255,255,0.25)", color: res === "L" ? "#fff" : "#000" }}>{res}</div>
+        </div>
+      </div>
+    </Frame>,
+  );
+}

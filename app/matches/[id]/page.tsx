@@ -50,6 +50,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           <span className="font-semibold text-depleted">{h2h.L}L</span>
           <span className="text-mute"> in archived matches</span>
         </p>
+        {m.opponent_id && (
+          <ShareButton url={`/share/rival?opp=${m.opponent_id}`} filename={`revorfest-vs-${m.opponent_id}.png`} title={`Revorfest vs ${m.opponent_name ?? "rival"}`} label="Share head-to-head" className="mt-4 glass hairline" />
+        )}
       </Reveal>
 
       <Reveal delay={0.15} className="tile mt-4 overflow-x-auto p-1">
