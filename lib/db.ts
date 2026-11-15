@@ -86,14 +86,26 @@ const SCHEMA = [
   )`,
 ];
 
+/** Bump when SCHEMA changes so existing databases get the new tables. */
+const SCHEMA_VERSION = 3;
+
 let ready: Promise<void> | null = null;
 
-/** Creates tables on first use (idempotent). */
+/** Creates tables on first use. After that it costs a single query per server instance. */
 export function ensureSchema() {
   if (!ready) {
     ready = (async () => {
       const sql = db();
+      try {
+        const rows = (await sql`SELECT version FROM schema_meta LIMIT 1`) as { version: number }[];
+        if ((rows[0]?.version ?? 0) >= SCHEMA_VERSION) return;
+      } catch {
+        /* schema_meta missing — first run */
+      }
       for (const stmt of SCHEMA) await sql.query(stmt);
+      await sql.query(`CREATE TABLE IF NOT EXISTS schema_meta (version int NOT NULL)`);
+      await sql.query(`DELETE FROM schema_meta`);
+      await sql.query(`INSERT INTO schema_meta (version) VALUES (${SCHEMA_VERSION})`);
     })().catch((err) => {
       ready = null;
       throw err;
