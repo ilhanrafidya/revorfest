@@ -4,6 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { m } from "motion/react";
 import { HomeIcon, PitchIcon, PlayIcon, SquadIcon, StatsIcon } from "./icons";
+import { PlayerAvatar } from "./player-avatar";
+
+export type NavMe = { slug: string; name: string; avatar: string | null } | null;
 import { SPRING_SNAPPY } from "@/lib/motion";
 
 const TABS = [
@@ -19,7 +22,7 @@ function useActive() {
   return (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
 }
 
-export function TopNav() {
+export function TopNav({ me }: { me: NavMe }) {
   const isActive = useActive();
   return (
     <header className="fixed inset-x-0 top-4 z-50 hidden justify-center md:flex">
@@ -45,8 +48,39 @@ export function TopNav() {
             </Link>
           );
         })}
+        <AccountChip me={me} />
       </nav>
     </header>
+  );
+}
+
+function AccountChip({ me, className = "" }: { me: NavMe; className?: string }) {
+  if (!me) {
+    return (
+      <Link href="/login" className={`ml-1 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-on-accent ${className}`}>
+        Log in
+      </Link>
+    );
+  }
+  return (
+    <Link href="/me" aria-label="My profile" className={`ml-1 rounded-full ${className}`}>
+      <PlayerAvatar name={me.name} src={me.avatar} className="size-9 text-xs" />
+    </Link>
+  );
+}
+
+/** Floating account chip for phones (top-right). */
+export function MobileAccount({ me }: { me: NavMe }) {
+  return (
+    <div className="fixed right-4 z-50 md:hidden" style={{ top: "calc(14px + env(safe-area-inset-top))" }}>
+      {me ? (
+        <AccountChip me={me} className="block shadow-xl shadow-black/50" />
+      ) : (
+        <Link href="/login" className="glass hairline block rounded-full px-4 py-2 text-sm font-semibold">
+          Log in
+        </Link>
+      )}
+    </div>
   );
 }
 

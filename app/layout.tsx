@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { BottomTabBar, TopNav } from "@/components/nav";
+import { BottomTabBar, MobileAccount, TopNav } from "@/components/nav";
+import { currentPlayer } from "@/lib/session";
+import { avatarUrl } from "@/lib/players";
 import { Footer } from "@/components/footer";
 
 const inter = Inter({
@@ -29,7 +31,11 @@ export const viewport: Viewport = {
 
 const kitScript = `try{var k=localStorage.getItem('rf-kit');if(k==='home'||k==='away'||k==='third')document.documentElement.dataset.kit=k}catch(e){}`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const player = await currentPlayer();
+  const me = player
+    ? { slug: player.slug, name: player.display_name, avatar: avatarUrl({ id: player.id, avatar_version: player.avatar_version, has_avatar: player.has_avatar }) }
+    : null;
   return (
     <html lang="en" data-kit="away" className={inter.variable} suppressHydrationWarning>
       <head>
@@ -45,7 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <Providers>
-          <TopNav />
+          <TopNav me={me} />
+          <MobileAccount me={me} />
           <main>{children}</main>
           <Footer />
           <BottomTabBar />
