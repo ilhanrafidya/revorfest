@@ -9,7 +9,7 @@ export function ClipArchive({ kind, items }: { kind: "gotw" | "notw"; items: Win
   return (
     <section className="mx-auto max-w-6xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
       <BackLink href={fame ? "/showdown" : "/showdown?cat=notw"} label="Showdown" />
-      <Reveal blur className="mt-6 px-1">
+      <Reveal blur className="px-1 md:mt-6">
         <p className={`text-sm font-semibold ${fame ? "text-gold" : "text-depleted"}`}>{fame ? "Goal of the Week winners" : "Nyunda of the Week winners"}</p>
         <h1 className="text-display mt-3 text-5xl md:text-7xl">{fame ? "Hall of Fame." : "Wall of Shame."}</h1>
       </Reveal>

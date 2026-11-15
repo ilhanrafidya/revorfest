@@ -23,7 +23,7 @@ export default async function MatchdayHistory() {
     <section className="mx-auto max-w-4xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
       <Reveal blur className="px-1 pb-10">
         <BackLink href="/matchday" label="Matchday" />
-        <p className="eyebrow mt-6">History</p>
+        <p className="eyebrow md:mt-6">History</p>
         <h1 className="text-display mt-3 text-5xl md:text-7xl">
           Every lineup.
           <br />

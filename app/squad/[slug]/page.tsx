@@ -38,7 +38,7 @@ export default async function PlayerPage({
         {p.jersey_number}
       </span>
 
-      <Reveal className="relative mb-8">
+      <Reveal className="relative mb-0 md:mb-8">
         <BackLink href="/squad" label="Squad" />
       </Reveal>
 

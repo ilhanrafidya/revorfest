@@ -18,7 +18,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     <section className="mx-auto max-w-4xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
       <BackLink href="/stats" label="Stats" />
 
-      <Reveal blur className="mt-6 text-center">
+      <Reveal blur className="text-center md:mt-6">
         <p className="eyebrow">
           {MATCH_TYPE_LABEL[m.match_type] ?? m.match_type} · {matchDate(m.played_at)}
         </p>

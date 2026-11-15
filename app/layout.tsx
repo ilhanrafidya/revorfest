@@ -6,6 +6,7 @@ import { BottomTabBar, MobileAccount, TopNav } from "@/components/nav";
 import { currentPlayer } from "@/lib/session";
 import { latestMatchdayAlert } from "@/lib/matchday";
 import { MatchdayNotice } from "@/components/matchday-notice";
+import { MobileTopBar } from "@/components/mobile-top-bar";
 import { avatarUrl } from "@/lib/players";
 import { Footer } from "@/components/footer";
 
@@ -53,6 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
         <Providers>
+          <MobileTopBar />
           <TopNav me={me} />
           <MobileAccount me={me} />
           <MatchdayNotice alert={mdAlert} meId={player?.id ?? null} />
