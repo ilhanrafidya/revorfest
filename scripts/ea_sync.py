@@ -3,7 +3,7 @@
 Fetches club 856775 (platform common-gen5) from EA's Pro Clubs API using a
 Chrome-like HTTP client, then posts the raw JSON to the app's /api/ingest.
 
-Runs in GitHub Actions (authenticates with the job's OIDC token) or on any PC
+Runs in GitHub Actions (every 15 min at match time) (authenticates with the job's OIDC token) or on any PC
 (set INGEST_SECRET). Usage:  python scripts/ea_sync.py
 """
 import json
