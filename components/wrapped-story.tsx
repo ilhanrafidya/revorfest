@@ -75,12 +75,12 @@ function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)", solid = false }
 /** Portrait with the shirt number huge behind it — same look as the share cards. */
 function Portrait({ who, color, size = 170 }: { who: Mate; color: string; size?: number }) {
   return (
-    <div className="relative grid w-full place-items-center overflow-hidden" style={{ height: size * 1.3 }}>
+    <div className="relative grid w-full place-items-center overflow-hidden" style={{ height: size * 1.45 }}>
       {who.number != null && (
         <m.span
           aria-hidden
-          className="text-display pointer-events-none absolute inset-x-0 top-0 select-none text-center leading-[0.8]"
-          style={{ fontSize: size * 1.15, letterSpacing: "-0.06em", backgroundImage: `linear-gradient(180deg, ${color}99, transparent 70%)`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+          className="text-display pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center leading-none"
+          style={{ fontSize: size * 1.7, letterSpacing: "-0.07em", backgroundImage: `linear-gradient(180deg, ${color} 0%, ${color}cc 35%, ${color}22 85%)`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", filter: `drop-shadow(0 0 24px ${color}55)` }}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, ease: EASE }}
