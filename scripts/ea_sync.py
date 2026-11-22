@@ -100,6 +100,28 @@ def main():
                 data = list(data.values())
             print(f"[{key} division fields]", json.dumps(div_fields(data))[:800])
 
+    # log clean-sheet related fields (one match + one member) to see what EA actually sends
+    try:
+        for t in ("leagueMatch", "playoffMatch", "friendlyMatch"):
+            for mt in (fetched.get(t) or [])[:10]:
+                clubs = mt.get("clubs", {})
+                ours = clubs.get(CLUB_ID) or {}
+                players = (mt.get("players") or {}).get(CLUB_ID) or {}
+                if not players:
+                    continue
+                ga = ours.get("goalsAgainst")
+                sample = {}
+                for p in list(players.values())[:11]:
+                    sample[p.get("playername", "?")] = {k: v for k, v in p.items() if "clean" in k.lower() or k in ("pos", "goalsconceded")}
+                print(f"[clean {t} ga={ga}]", json.dumps(sample)[:900])
+                break
+        mem = fetched.get("members")
+        mlist = mem.get("members") if isinstance(mem, dict) else mem
+        if isinstance(mlist, list) and mlist:
+            print("[clean members]", json.dumps({m.get("name", "?"): {k: v for k, v in m.items() if "clean" in k.lower() or "Conceded" in k} for m in mlist[:6]})[:900])
+    except Exception as e:  # never break the sync over a debug line
+        print("[clean debug error]", e)
+
     payload = {
         "source": "github-actions" if os.environ.get("GITHUB_ACTIONS") else "manual",
         "fetched": fetched,
