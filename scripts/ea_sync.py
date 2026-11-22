@@ -105,8 +105,8 @@ def main():
         for t in ("leagueMatch", "playoffMatch", "friendlyMatch"):
             for mt in (fetched.get(t) or [])[:10]:
                 clubs = mt.get("clubs", {})
-                ours = clubs.get(CLUB_ID) or {}
-                players = (mt.get("players") or {}).get(CLUB_ID) or {}
+                ours = clubs.get(CLUB) or {}
+                players = (mt.get("players") or {}).get(CLUB) or {}
                 if not players:
                     continue
                 ga = ours.get("goalsAgainst")
