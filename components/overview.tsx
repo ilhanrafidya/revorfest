@@ -15,6 +15,8 @@ import { currentMatchday, matchdayRoster } from "@/lib/matchday";
 import { clipCounts, windowState, winners } from "@/lib/clips";
 import { Jersey } from "./jersey";
 import Link from "next/link";
+import { db } from "@/lib/db";
+import { avatarUrl } from "@/lib/players";
 
 async function loadExtras() {
   try {
@@ -59,7 +61,7 @@ async function loadOverview() {
       clubHistory(30),
       leagueForm(5),
     ]);
-    const streakRows = (await recentMatches(40)).map((m) => m.result as "W" | "D" | "L");
+    const lastMotm = recent[0] ? await lastMatchStar(recent[0].match_id) : null;
     const race = seasonWinners(seasonTable);
     const skills = history.filter((h) => h.skill != null).map((h) => ({ at: new Date(h.at).getTime(), v: h.skill as number }));
     const weekAgo = Date.now() - 7 * 86400000;
@@ -78,7 +80,9 @@ async function loadOverview() {
         division: clampDiv(overall.currentDivision),
         bestDivision: clampDiv(overall.bestDivision),
         form: recent.map((m) => m.result).reverse(),
-        streak: streakOf(streakRows),
+        motm: lastMotm
+          ? { ...lastMotm, opponent: recent[0].opponent_name ?? "Unknown", score: `${recent[0].goals_for}–${recent[0].goals_against}`, matchId: recent[0].match_id }
+          : null,
         countdown: {
           season: season.name,
           ends: season.end.toISOString(),
@@ -113,22 +117,35 @@ async function loadOverview() {
   }
 }
 
-/** Current run (newest first input) + longest win run in the list. */
-function streakOf(newestFirst: ("W" | "D" | "L")[]) {
-  if (!newestFirst.length) return null;
-  const kind = newestFirst[0];
-  let n = 0;
-  while (n < newestFirst.length && newestFirst[n] === kind) n++;
-  let best = 0;
-  let run = 0;
-  for (const r of newestFirst) {
-    run = r === "W" ? run + 1 : 0;
-    best = Math.max(best, run);
-  }
-  return { kind, n, best };
+/** A season that ended within the last two weeks (Awards Night / Wrapped are fresh). */
+/** Our Man of the Match in a game — or, if the award went to the other side, our best-rated player. */
+async function lastMatchStar(matchId: string) {
+  const [r] = (await db()`
+    SELECT mp.gamertag, mp.rating, mp.goals, mp.assists, mp.motm, p.id, p.display_name, p.avatar_version, (p.avatar_b64 IS NOT NULL) AS has_avatar
+    FROM ea_match_players mp LEFT JOIN players p ON lower(p.ea_gamertag) = lower(mp.gamertag) AND p.active
+    WHERE mp.match_id = ${matchId}
+    ORDER BY mp.motm DESC, mp.rating DESC NULLS LAST LIMIT 1`) as {
+    gamertag: string;
+    rating: number | null;
+    goals: number;
+    assists: number;
+    motm: boolean;
+    id: string | null;
+    display_name: string | null;
+    avatar_version: number | null;
+    has_avatar: boolean | null;
+  }[];
+  if (!r) return null;
+  return {
+    name: r.display_name ?? r.gamertag,
+    avatar: r.id ? avatarUrl({ id: r.id, avatar_version: r.avatar_version ?? 0, has_avatar: !!r.has_avatar }) : null,
+    rating: r.rating != null ? Number(r.rating) : null,
+    goals: r.goals,
+    assists: r.assists,
+    motm: r.motm,
+  };
 }
 
-/** A season that ended within the last two weeks (Awards Night / Wrapped are fresh). */
 function recentFinished() {
   const s = finishedSeasons()[0];
   return s && Date.now() - s.end.getTime() < 14 * 86400000 ? { n: s.n, name: s.name } : null;
@@ -179,7 +196,7 @@ export async function Overview() {
     ...demo,
     division: 4,
     bestDivision: 4,
-    streak: { kind: "W" as "W" | "D" | "L", n: 3, best: 5 },
+    motm: null as null | { name: string; avatar: string | null; rating: number | null; goals: number; assists: number; motm: boolean; opponent: string; score: string; matchId: string },
     countdown: { season: "Season 2", ends: new Date(Date.now() + 9 * 86400000).toISOString(), race: [] as { name: string; avatar: string | null; rating: number; matches: number }[], recent: null as { n: number; name: string } | null },
     road: { points: 23, promotions: 2, skill: 1402, skillDelta: 38, spark: [1364, 1371, 1368, 1380, 1392, 1402], leagueForm: ["W", "W", "D", "L", "W"] as ("W" | "D" | "L")[] },
     lastMatch: demo.lastMatch,
@@ -260,35 +277,34 @@ export async function Overview() {
           </TiltCard>
         </Reveal>
 
-        {/* Streak */}
+        {/* MOTM of the last match */}
         <Reveal delay={0.1} className="col-span-1">
-          <TiltCard className="p-5">
-            <div className="flex h-full flex-col justify-between gap-6">
-              <p className="eyebrow">Current streak</p>
-              {club.streak ? (
-                <div>
-                  <p className={`text-display text-5xl ${club.streak.kind === "W" ? "text-accent" : club.streak.kind === "L" ? "text-depleted" : ""}`}>
-                    <Ticker value={club.streak.n} />
-                    <span className="ml-1 text-3xl">{club.streak.kind}</span>
-                  </p>
-                  <p className="mt-2 text-sm text-mute">
-                    {club.streak.kind === "W"
-                      ? club.streak.n > 1
-                        ? "wins in a row 🔥"
-                        : "back to winning"
-                      : club.streak.kind === "L"
-                        ? club.streak.n > 1
-                          ? "losses in a row"
-                          : "time to bounce back"
-                        : "draw last time out"}
-                    {club.streak.best > 1 && <span className="block text-xs">Best run: {club.streak.best}W</span>}
+          {club.motm ? (
+            <Link href={`/matches/${club.motm.matchId}`} className="block h-full">
+              <TiltCard className="p-5" background="radial-gradient(80% 70% at 100% 0%, rgb(221 177 104 / 0.16), transparent 70%)">
+                <div className="flex h-full flex-col justify-between gap-4">
+                  <p className="eyebrow text-gold">{club.motm.motm ? "MOTM · last match" : "Top rated · last match"}</p>
+                  <div className="flex items-center gap-3">
+                    <PlayerAvatar name={club.motm.name} src={club.motm.avatar} className="size-11 text-xs ring-2 ring-gold/60" />
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{club.motm.name}</p>
+                      <p className="text-display text-2xl leading-none text-gold">{club.motm.rating != null ? club.motm.rating.toFixed(1) : "—"}</p>
+                    </div>
+                  </div>
+                  <p className="truncate text-xs text-mute">
+                    {club.motm.goals}G {club.motm.assists}A · vs {club.motm.opponent} {club.motm.score}
                   </p>
                 </div>
-              ) : (
+              </TiltCard>
+            </Link>
+          ) : (
+            <TiltCard className="p-5">
+              <div className="flex h-full flex-col justify-between gap-6">
+                <p className="eyebrow">MOTM · last match</p>
                 <span className="text-display block text-5xl text-mute">—</span>
-              )}
-            </div>
-          </TiltCard>
+              </div>
+            </TiltCard>
+          )}
         </Reveal>
 
         {/* Form */}
