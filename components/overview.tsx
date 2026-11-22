@@ -5,8 +5,9 @@ import { HomeClipTile } from "./home-clip-tile";
 import { club as demo, gotw, nextMatchday, potw as demoPotw, topAssist as demoAssist, topScorer as demoScorer, wpotw as demoWpotw } from "@/lib/mock";
 import { PlayerAvatar } from "./player-avatar";
 import { clubHistory, clubOverall, lastSync, leagueForm, recentMatches } from "@/lib/stats";
-import { seasonAt } from "@/lib/seasons";
-import { seasonWinners } from "@/lib/awards";
+import { finishedSeasons, seasonAt } from "@/lib/seasons";
+import { MIN_SEASON_MATCHES, seasonWinners } from "@/lib/awards";
+import { Countdown } from "./countdown";
 import { rangeTable } from "@/lib/honors";
 import { honorsFor, weekStart } from "@/lib/honors";
 import { timeAgo } from "@/lib/format";
@@ -58,6 +59,7 @@ async function loadOverview() {
       clubHistory(30),
       leagueForm(5),
     ]);
+    const streakRows = (await recentMatches(40)).map((m) => m.result as "W" | "D" | "L");
     const race = seasonWinners(seasonTable);
     const skills = history.filter((h) => h.skill != null).map((h) => ({ at: new Date(h.at).getTime(), v: h.skill as number }));
     const weekAgo = Date.now() - 7 * 86400000;
@@ -76,6 +78,16 @@ async function loadOverview() {
         division: clampDiv(overall.currentDivision),
         bestDivision: clampDiv(overall.bestDivision),
         form: recent.map((m) => m.result).reverse(),
+        streak: streakOf(streakRows),
+        countdown: {
+          season: season.name,
+          ends: season.end.toISOString(),
+          race: seasonTable
+            .filter((l) => l.playerId && l.matches >= MIN_SEASON_MATCHES)
+            .slice(0, 3)
+            .map((l) => ({ name: l.name, avatar: l.avatar, rating: l.avgRating, matches: l.matches })),
+          recent: recentFinished(),
+        },
         road: {
           points: overall.points,
           promotions: overall.promotions,
@@ -99,6 +111,27 @@ async function loadOverview() {
   } catch {
     return null;
   }
+}
+
+/** Current run (newest first input) + longest win run in the list. */
+function streakOf(newestFirst: ("W" | "D" | "L")[]) {
+  if (!newestFirst.length) return null;
+  const kind = newestFirst[0];
+  let n = 0;
+  while (n < newestFirst.length && newestFirst[n] === kind) n++;
+  let best = 0;
+  let run = 0;
+  for (const r of newestFirst) {
+    run = r === "W" ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  return { kind, n, best };
+}
+
+/** A season that ended within the last two weeks (Awards Night / Wrapped are fresh). */
+function recentFinished() {
+  const s = finishedSeasons()[0];
+  return s && Date.now() - s.end.getTime() < 14 * 86400000 ? { n: s.n, name: s.name } : null;
 }
 
 function Spark({ values }: { values: number[] }) {
@@ -146,6 +179,8 @@ export async function Overview() {
     ...demo,
     division: 4,
     bestDivision: 4,
+    streak: { kind: "W" as "W" | "D" | "L", n: 3, best: 5 },
+    countdown: { season: "Season 2", ends: new Date(Date.now() + 9 * 86400000).toISOString(), race: [] as { name: string; avatar: string | null; rating: number; matches: number }[], recent: null as { n: number; name: string } | null },
     road: { points: 23, promotions: 2, skill: 1402, skillDelta: 38, spark: [1364, 1371, 1368, 1380, 1392, 1402], leagueForm: ["W", "W", "D", "L", "W"] as ("W" | "D" | "L")[] },
     lastMatch: demo.lastMatch,
   };
@@ -225,27 +260,33 @@ export async function Overview() {
           </TiltCard>
         </Reveal>
 
-        {/* Skill rating */}
+        {/* Streak */}
         <Reveal delay={0.1} className="col-span-1">
           <TiltCard className="p-5">
             <div className="flex h-full flex-col justify-between gap-6">
-              <p className="eyebrow">Division</p>
-              <div>
-                {club.division === 0 ? (
-                  <span className="text-display text-gradient block text-5xl">Elite</span>
-                ) : club.division != null ? (
-                  <Ticker value={club.division} className="text-display block text-5xl" />
-                ) : (
-                  <span className="text-display block text-5xl text-mute">—</span>
-                )}
-                <p className="mt-2 text-sm text-accent transition-colors duration-700">
-                  {club.bestDivision != null && club.division != null && club.bestDivision < club.division
-                    ? `Best: ${divLabel(club.bestDivision)}`
-                    : club.division != null && club.division >= 1
-                      ? `Next up: ${divLabel(club.division - 1)}`
-                      : "EA league"}
-                </p>
-              </div>
+              <p className="eyebrow">Current streak</p>
+              {club.streak ? (
+                <div>
+                  <p className={`text-display text-5xl ${club.streak.kind === "W" ? "text-accent" : club.streak.kind === "L" ? "text-depleted" : ""}`}>
+                    <Ticker value={club.streak.n} />
+                    <span className="ml-1 text-3xl">{club.streak.kind}</span>
+                  </p>
+                  <p className="mt-2 text-sm text-mute">
+                    {club.streak.kind === "W"
+                      ? club.streak.n > 1
+                        ? "wins in a row 🔥"
+                        : "back to winning"
+                      : club.streak.kind === "L"
+                        ? club.streak.n > 1
+                          ? "losses in a row"
+                          : "time to bounce back"
+                        : "draw last time out"}
+                    {club.streak.best > 1 && <span className="block text-xs">Best run: {club.streak.best}W</span>}
+                  </p>
+                </div>
+              ) : (
+                <span className="text-display block text-5xl text-mute">—</span>
+              )}
             </div>
           </TiltCard>
         </Reveal>
@@ -269,41 +310,43 @@ export async function Overview() {
 
         {/* Road to Division */}
         {club.division != null && club.division > 0 && (
-          <Reveal delay={0.05} className="col-span-2">
+          <Reveal delay={0.05} className="col-span-2 md:row-span-2">
             <TiltCard className="p-5 md:p-6" background="radial-gradient(70% 80% at 100% 0%, rgb(215 255 58 / 0.12), transparent 70%)">
               <div className="flex h-full flex-col gap-5">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="eyebrow">Road to {divLabel(club.division - 1)}</p>
                   {club.road.promotions != null && <p className="text-xs text-mute">{club.road.promotions} promotions so far</p>}
                 </div>
-                <div className="flex items-end gap-3">
-                  <span className="text-display text-5xl">Div {club.division}</span>
-                  <svg viewBox="0 0 24 24" className="mb-2 size-6 text-mute" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <div className="flex items-center gap-4">
+                  <span className="text-display text-6xl leading-none md:text-7xl">Div {club.division}</span>
+                  <svg viewBox="0 0 24 24" className="size-7 text-accent" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M5 12h14M13 6l6 6-6 6" />
                   </svg>
-                  <span className={`text-display text-3xl ${club.division - 1 === 0 ? "text-gradient" : "text-mute"}`}>{club.division - 1 === 0 ? "Elite" : `Div ${club.division - 1}`}</span>
+                  <span className={`text-display text-4xl leading-none md:text-5xl ${club.division - 1 === 0 ? "text-gradient" : "text-white/35"}`}>
+                    {club.division - 1 === 0 ? "Elite" : `Div ${club.division - 1}`}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-white/[0.04] p-3">
-                    <p className="text-xs text-mute">League points</p>
-                    <p className="text-display mt-1 text-3xl">{club.road.points != null ? <Ticker value={club.road.points} /> : "—"}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/[0.04] p-3">
-                    <p className="text-xs text-mute">Skill rating</p>
-                    <p className="text-display mt-1 text-3xl">{club.road.skill != null ? <Ticker value={club.road.skill} /> : "—"}</p>
+                <div className="mt-auto">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-mute">Skill rating</p>
+                      <p className="text-display mt-1 text-4xl">{club.road.skill != null ? <Ticker value={club.road.skill} /> : "—"}</p>
+                    </div>
                     {club.road.skillDelta != null && club.road.skillDelta !== 0 && (
-                      <p className={`text-xs font-semibold ${club.road.skillDelta > 0 ? "text-accent" : "text-depleted"}`}>
-                        {club.road.skillDelta > 0 ? "+" : ""}
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${club.road.skillDelta > 0 ? "bg-accent/15 text-accent" : "bg-depleted/15 text-depleted"}`}>
+                        {club.road.skillDelta > 0 ? "▲ +" : "▼ "}
                         {club.road.skillDelta} this week
-                      </p>
+                      </span>
                     )}
                   </div>
+                  {club.road.spark.length >= 2 ? (
+                    <div className="mt-2">
+                      <Spark values={club.road.spark} />
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-mute">The trend line fills in as matches sync.</p>
+                  )}
                 </div>
-                {club.road.spark.length >= 2 ? (
-                  <Spark values={club.road.spark} />
-                ) : (
-                  <p className="text-xs text-mute">Skill rating trend builds up as matches sync.</p>
-                )}
                 {club.road.leagueForm.length > 0 && (
                   <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
                     <p className="text-xs text-mute">League form</p>
@@ -311,7 +354,7 @@ export async function Overview() {
                       {club.road.leagueForm.map((r, k) => (
                         <span
                           key={k}
-                          className={`grid size-6 place-items-center rounded-full text-[10px] font-bold ${r === "W" ? "bg-accent text-black" : r === "L" ? "bg-depleted/80 text-white" : "bg-white/15"}`}
+                          className={`grid size-7 place-items-center rounded-full text-[11px] font-bold ${r === "W" ? "bg-accent text-black" : r === "L" ? "bg-depleted/80 text-white" : "bg-white/15"}`}
                         >
                           {r}
                         </span>
@@ -410,6 +453,48 @@ export async function Overview() {
               </div>
             </TiltCard>
           </Link>
+        </Reveal>
+
+        {/* Season countdown */}
+        <Reveal delay={0.05} className="col-span-2 md:row-span-2">
+          <TiltCard className="p-5 md:p-6" background="radial-gradient(70% 70% at 100% 0%, rgb(221 177 104 / 0.14), transparent 70%)">
+            <div className="flex h-full flex-col gap-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="eyebrow">{club.countdown.season} ends in</p>
+                <Link href="/stats" className="text-xs text-mute transition hover:text-chalk">
+                  Season race ›
+                </Link>
+              </div>
+              <Countdown to={club.countdown.ends} />
+              <div className="mt-auto">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-gold">Player of the Season race</p>
+                {club.countdown.race.length ? (
+                  <ol className="space-y-2">
+                    {club.countdown.race.map((r, k) => (
+                      <li key={r.name} className={`flex items-center gap-3 rounded-2xl px-3 py-2 ${k === 0 ? "bg-gold/10 ring-1 ring-gold/25" : "bg-white/[0.04]"}`}>
+                        <span className={`w-4 text-sm font-semibold ${k === 0 ? "text-gold" : "text-mute"}`}>{k + 1}</span>
+                        <PlayerAvatar name={r.name} src={r.avatar} className="size-8 text-[10px]" />
+                        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{r.name}</span>
+                        <span className="text-xs text-mute">{r.matches} MP</span>
+                        <span className={`w-9 text-right text-sm font-semibold tabular-nums ${k === 0 ? "text-gold" : ""}`}>{r.rating.toFixed(1)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="text-sm text-mute">Play {MIN_SEASON_MATCHES}+ matches this season to enter the race.</p>
+                )}
+              </div>
+              {club.countdown.recent && (
+                <Link
+                  href={`/awards/${club.countdown.recent.n}`}
+                  className="gold-sheen flex items-center justify-between rounded-2xl bg-gold/15 px-4 py-3 text-sm font-semibold ring-1 ring-gold/30"
+                >
+                  🏆 {club.countdown.recent.name} Awards Night
+                  <span className="text-mute">›</span>
+                </Link>
+              )}
+            </div>
+          </TiltCard>
         </Reveal>
 
         {/* Golden boot — current EA season */}
