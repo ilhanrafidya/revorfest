@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   const ws = wrappedSeason(n);
   const p = await getPlayerBySlug(q.get("slug") ?? "");
   if (!ws || !p) return new Response("Not found", { status: 404 });
-  if (!ws.finished && q.get("qa") !== "pz41m" && (await currentPlayer())?.role !== "admin") return new Response("Not yet", { status: 404 });
+  if (!ws.finished && (await currentPlayer())?.role !== "admin") return new Response("Not yet", { status: 404 });
   const w = await buildWrapped(n, p.ea_gamertag);
   if (!w) return new Response("No matches", { status: 404 });
 

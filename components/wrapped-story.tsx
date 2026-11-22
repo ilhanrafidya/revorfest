@@ -75,12 +75,14 @@ function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)", solid = false }
 /** Portrait with the shirt number huge behind it — same look as the share cards. */
 function Portrait({ who, color, size = 170 }: { who: Mate; color: string; size?: number }) {
   return (
-    <div className="relative grid w-full place-items-center overflow-hidden" style={{ height: size * 1.45 }}>
+    <div className="relative grid w-full place-items-center" style={{ height: size * 1.55 }}>
+      {/* soft glow — a blurred blob, so nothing gets cut into a box */}
+      <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" style={{ width: size * 1.8, height: size * 1.3, background: `${color}33` }} />
       {who.number != null && (
         <m.span
           aria-hidden
           className="text-display pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center leading-none"
-          style={{ fontSize: size * 1.7, letterSpacing: "-0.07em", backgroundImage: `linear-gradient(180deg, ${color} 0%, ${color}cc 35%, ${color}22 85%)`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent", filter: `drop-shadow(0 0 24px ${color}55)` }}
+          style={{ fontSize: size * 1.6, letterSpacing: "-0.07em", backgroundImage: `linear-gradient(180deg, ${color} 0%, ${color}bb 45%, ${color}00 92%)`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, ease: EASE }}
