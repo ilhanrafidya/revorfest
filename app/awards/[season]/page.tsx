@@ -10,12 +10,11 @@ export async function generateMetadata({ params }: { params: Promise<{ season: s
   return { title: `Season ${(await params).season} Awards Night` };
 }
 
-export default async function AwardsNightPage({ params, searchParams }: { params: Promise<{ season: string }>; searchParams: Promise<{ qa?: string }> }) {
+export default async function AwardsNightPage({ params }: { params: Promise<{ season: string }> }) {
   const n = Number((await params).season);
-  const qa = (await searchParams).qa === "an5q1";
   const ns = nightSeason(n);
   if (!ns) notFound();
-  if (!ns.finished && !qa && (await currentPlayer())?.role !== "admin") notFound();
+  if (!ns.finished && (await currentPlayer())?.role !== "admin") notFound();
   const night = await awardsNight(n);
   if (!night || !night.awards.length) notFound();
   return <AwardsNight season={night.season} awards={night.awards} preview={!night.season.finished} />;

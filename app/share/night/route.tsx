@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const n = Number(q.get("season"));
   const ns = nightSeason(n);
   if (!ns) return new Response("Not found", { status: 404 });
-  if (!ns.finished && q.get("qa") !== "an5q1" && (await currentPlayer())?.role !== "admin") return new Response("Not yet", { status: 404 });
+  if (!ns.finished && (await currentPlayer())?.role !== "admin") return new Response("Not yet", { status: 404 });
   const night = await awardsNight(n);
   const a = night?.awards.find((x) => x.key === q.get("key"));
   if (!night || !a) return new Response("Not found", { status: 404 });
