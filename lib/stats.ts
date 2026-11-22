@@ -1,7 +1,7 @@
 import "server-only";
 import type { WeeklyLine } from "./honors";
 import { db, ensureSchema } from "./db";
-import { parseMembers, parseOverall, type ClubOverall, type MemberStat } from "./ea";
+import { parseMembers, parseOverall, squadFromRaw, type ClubOverall, type MemberStat } from "./ea";
 import { avatarUrl } from "./players";
 
 export type Linked = { name: string; slug: string | null; avatar: string | null; number: number | null };
@@ -71,9 +71,13 @@ export async function matchDetail(id: string) {
   await ensureSchema();
   const sql = db();
   const [m] = (await sql`
-    SELECT match_id, match_type, played_at, goals_for, goals_against, result, opponent_id, opponent_name
-    FROM ea_matches WHERE match_id = ${id}`) as MatchRow[];
+    SELECT match_id, match_type, played_at, goals_for, goals_against, result, opponent_id, opponent_name, raw
+    FROM ea_matches WHERE match_id = ${id}`) as (MatchRow & { raw: unknown })[];
   if (!m) return null;
+  const opponents = squadFromRaw(m.raw, m.opponent_id).map((r) => ({
+    ...r,
+    who: { name: r.gamertag, slug: null, avatar: null, number: null } as Linked,
+  }));
   const [rows, index, h2h] = await Promise.all([
     sql`SELECT * FROM ea_match_players WHERE match_id = ${id} ORDER BY rating DESC NULLS LAST` as unknown as Promise<
       {
@@ -102,7 +106,17 @@ export async function matchDetail(id: string) {
   const record = { W: 0, D: 0, L: 0 };
   for (const r of h2h) if (r.result in record) record[r.result as "W" | "D" | "L"] = r.n;
   return {
-    match: { ...m, played_at: new Date(m.played_at).toISOString() },
+    match: {
+      match_id: m.match_id,
+      match_type: m.match_type,
+      played_at: new Date(m.played_at).toISOString(),
+      goals_for: m.goals_for,
+      goals_against: m.goals_against,
+      result: m.result,
+      opponent_id: m.opponent_id,
+      opponent_name: m.opponent_name,
+    },
+    opponents,
     players: rows.map((r) => ({ ...r, who: link(index, r.gamertag) })),
     h2h: record,
   };

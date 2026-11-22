@@ -42,6 +42,51 @@ export type ParsedMatchPlayer = {
 };
 
 /** Parses EA's clubs/matches response for one match type. Unknown shapes are skipped. */
+export type SquadLine = {
+  gamertag: string;
+  position: string | null;
+  rating: number | null;
+  goals: number;
+  assists: number;
+  shots: number;
+  passes_made: number;
+  pass_attempts: number;
+  tackles_made: number;
+  tackle_attempts: number;
+  saves: number;
+  motm: boolean;
+  red_cards: number;
+};
+
+/** One club's player lines from a stored raw match (used for the opponent's side). */
+export function squadFromRaw(raw: unknown, clubId: string | null): SquadLine[] {
+  if (!clubId) return [];
+  const roster = obj(obj(obj(raw).players)[clubId]);
+  return Object.values(roster)
+    .map((value) => {
+      const p = obj(value);
+      const tag = typeof p.playername === "string" ? p.playername.trim() : "";
+      const rating = Number(p.rating);
+      return {
+        gamertag: tag,
+        position: typeof p.pos === "string" ? p.pos : null,
+        rating: Number.isFinite(rating) && rating > 0 ? rating : null,
+        goals: num(p.goals),
+        assists: num(p.assists),
+        shots: num(p.shots),
+        passes_made: num(p.passesmade),
+        pass_attempts: num(p.passattempts),
+        tackles_made: num(p.tacklesmade),
+        tackle_attempts: num(p.tackleattempts),
+        saves: num(p.saves),
+        motm: String(p.mom) === "1",
+        red_cards: num(p.redcards),
+      };
+    })
+    .filter((l) => l.gamertag)
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+}
+
 export function parseMatches(list: unknown, matchType: string) {
   const matches: ParsedMatch[] = [];
   const players: ParsedMatchPlayer[] = [];

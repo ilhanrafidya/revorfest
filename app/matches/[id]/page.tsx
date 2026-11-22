@@ -1,3 +1,4 @@
+import { BoardTabs } from "@/components/board-tabs";
 import type { Metadata } from "next";
 import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "Match" };
 export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
   const data = await matchDetail((await params).id);
   if (!data) notFound();
-  const { match: m, players, h2h } = data;
+  const { match: m, players, opponents, h2h } = data;
   const verdict = m.result === "W" ? "Win" : m.result === "L" ? "Loss" : "Draw";
 
   return (
@@ -55,45 +56,75 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         )}
       </Reveal>
 
-      <Reveal delay={0.15} className="tile mt-4 overflow-x-auto p-1">
-        <table className="w-full min-w-[620px] text-sm">
-          <thead className="text-left text-xs text-mute">
-            <tr>
-              <th className="px-4 py-3 font-medium">Player</th>
-              <th className="px-2 py-3 font-medium">Pos</th>
-              <th className="px-2 py-3 text-right font-medium">Rating</th>
-              <th className="px-2 py-3 text-right font-medium">G</th>
-              <th className="px-2 py-3 text-right font-medium">A</th>
-              <th className="px-2 py-3 text-right font-medium">Shots</th>
-              <th className="px-2 py-3 text-right font-medium">Pass</th>
-              <th className="px-4 py-3 text-right font-medium">Tackles</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/[0.06]">
-            {players.map((p) => (
-              <tr key={p.gamertag}>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <WhoLink who={p.who} size="size-8 text-[10px]" />
-                    {p.motm && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">MOTM</span>}
-                  </div>
-                </td>
-                <td className="px-2 py-3 capitalize text-mute">{p.position ?? "—"}</td>
-                <td className="px-2 py-3 text-right font-semibold tabular-nums">{p.rating != null ? Number(p.rating).toFixed(1) : "—"}</td>
-                <td className="px-2 py-3 text-right tabular-nums">{p.goals}</td>
-                <td className="px-2 py-3 text-right tabular-nums">{p.assists}</td>
-                <td className="px-2 py-3 text-right tabular-nums">{p.shots}</td>
-                <td className="px-2 py-3 text-right tabular-nums">
-                  {p.passes_made}/{p.pass_attempts}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {p.tackles_made}/{p.tackle_attempts}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <Reveal delay={0.15} className="mt-8">
+        <BoardTabs
+          tabs={[
+            { key: "us", label: "Revorfest", note: `${players.length} players`, content: <Squad rows={players} /> },
+            ...(opponents.length
+              ? [{ key: "them", label: (m.opponent_name ?? "Opponent").slice(0, 18), note: `${opponents.length} players`, content: <Squad rows={opponents} /> }]
+              : []),
+          ]}
+        />
       </Reveal>
     </section>
+  );
+}
+
+type Row = {
+  gamertag: string;
+  position: string | null;
+  rating: number | null;
+  goals: number;
+  assists: number;
+  shots: number;
+  passes_made: number;
+  pass_attempts: number;
+  tackles_made: number;
+  tackle_attempts: number;
+  motm: boolean;
+  who: Parameters<typeof WhoLink>[0]["who"];
+};
+
+function Squad({ rows }: { rows: Row[] }) {
+  return (
+    <div className="tile overflow-x-auto p-1">
+      <table className="w-full min-w-[620px] text-sm">
+        <thead className="text-left text-xs text-mute">
+          <tr>
+            <th className="px-4 py-3 font-medium">Player</th>
+            <th className="px-2 py-3 font-medium">Pos</th>
+            <th className="px-2 py-3 text-right font-medium">Rating</th>
+            <th className="px-2 py-3 text-right font-medium">G</th>
+            <th className="px-2 py-3 text-right font-medium">A</th>
+            <th className="px-2 py-3 text-right font-medium">Shots</th>
+            <th className="px-2 py-3 text-right font-medium">Pass</th>
+            <th className="px-4 py-3 text-right font-medium">Tackles</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/[0.06]">
+          {rows.map((p) => (
+            <tr key={p.gamertag}>
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <WhoLink who={p.who} size="size-8 text-[10px]" />
+                  {p.motm && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold">MOTM</span>}
+                </div>
+              </td>
+              <td className="px-2 py-3 capitalize text-mute">{p.position ?? "—"}</td>
+              <td className="px-2 py-3 text-right font-semibold tabular-nums">{p.rating != null ? Number(p.rating).toFixed(1) : "—"}</td>
+              <td className="px-2 py-3 text-right tabular-nums">{p.goals}</td>
+              <td className="px-2 py-3 text-right tabular-nums">{p.assists}</td>
+              <td className="px-2 py-3 text-right tabular-nums">{p.shots}</td>
+              <td className="px-2 py-3 text-right tabular-nums">
+                {p.passes_made}/{p.pass_attempts}
+              </td>
+              <td className="px-4 py-3 text-right tabular-nums">
+                {p.tackles_made}/{p.tackle_attempts}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
