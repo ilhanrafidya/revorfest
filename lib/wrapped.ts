@@ -1,6 +1,6 @@
 import "server-only";
 import { db, ensureSchema } from "./db";
-import { allAwards, hattricks } from "./awards";
+import { allAwards, hattricks, maestros } from "./awards";
 import { MIN_MATCHES, rangeTable, weekKey, weekStart } from "./honors";
 import { avatarUrl } from "./players";
 import { finishedSeasons, seasonAt, seasonByNumber, type Season } from "./seasons";
@@ -289,10 +289,15 @@ export async function buildWrapped(seasonN: number, gamertag: string): Promise<W
     const t = new Date(h.playedAt);
     return t >= season.start && t < end;
   });
+  const assistTricks = (await maestros(gamertag)).filter((h) => {
+    const t = new Date(h.playedAt);
+    return t >= season.start && t < end;
+  });
   const awards = {
     potw: (pa?.potwWeeks ?? []).filter(inSeason).length,
     weak: (pa?.weakWeeks ?? []).filter(inSeason).length,
     hattricks: tricks.length,
+    maestros: assistTricks.length,
     season: (pa?.season ?? []).filter((x) => x.n === season.n).map((x) => (x.kind === "pots" ? "Player of the Season" : x.kind === "boot" ? "Golden Boot" : "Playmaker")),
   };
 

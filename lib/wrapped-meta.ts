@@ -29,7 +29,7 @@ export type Wrapped = {
   victim: { opponent: string; goals: number; W: number; D: number; L: number; played: number } | null;
   partner: (Mate & { together: number; wins: number; rate: number }) | null;
   signature: { label: string; value: string; rank: number } | null;
-  awards: { potw: number; weak: number; hattricks: number; season: string[] };
+  awards: { potw: number; weak: number; hattricks: number; maestros: number; season: string[] };
   archetype: Archetype;
   archetypeStats: { label: string; value: string }[];
   club: {

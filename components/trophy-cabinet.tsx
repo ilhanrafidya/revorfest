@@ -1,4 +1,4 @@
-import type { Hattrick, Milestone, PlayerAwards } from "@/lib/awards";
+import type { Hattrick, Maestro, Milestone, PlayerAwards } from "@/lib/awards";
 import { MILESTONES } from "@/lib/awards";
 import { weekFromKey, weekLabel } from "@/lib/honors";
 import { TrophyShelf, type Shelf } from "./trophy-shelf";
@@ -34,12 +34,14 @@ export function TrophyCabinet({
   name,
   awards,
   hattricks,
+  maestros = [],
   milestones,
 }: {
   slug: string;
   name: string;
   awards: PlayerAwards | null;
   hattricks: Hattrick[];
+  maestros?: Maestro[];
   milestones: Milestone[];
 }) {
   const items: Item[] = [];
@@ -67,6 +69,17 @@ export function TrophyCabinet({
       url: `/share/hattrick?match=${h.matchId}&tag=${encodeURIComponent(h.gamertag)}`,
       file: `revorfest-hattrick-${h.matchId}.png`,
     });
+  for (const m of maestros)
+    items.push({
+      group: "maestro",
+      key: `ma-${m.matchId}`,
+      tone: "blue",
+      icon: "trophy",
+      title: m.assists >= 5 ? "Assist machine" : m.assists === 4 ? "Grand Maestro" : "Maestro",
+      sub: `${m.assists} assists vs ${m.opponent} · ${m.gf}–${m.ga}`,
+      url: `/share/hattrick?kind=assist&match=${m.matchId}&tag=${encodeURIComponent(m.gamertag)}`,
+      file: `revorfest-maestro-${m.matchId}.png`,
+    });
   // only the highest milestone per stat — the lower ones are implied
   const top = milestones.filter((m, i) => milestones.findIndex((x) => x.stat === m.stat) === i);
   for (const m of top)
@@ -89,6 +102,7 @@ export function TrophyCabinet({
     { group: "assist", title: "Playmaker" },
     { group: "potw", title: "Player of the Week" },
     { group: "hattrick", title: "Hattricks this week" },
+    { group: "maestro", title: "Maestro this week" },
     { group: "milestone", title: "Career milestones" },
     { group: "weak", title: "Player of the Weak" },
   ];

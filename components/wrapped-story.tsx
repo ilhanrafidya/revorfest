@@ -317,6 +317,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
       ...w.awards.season.map((s) => ({ k: s, v: "👑", gold: true })),
       { k: "Player of the Week", v: String(w.awards.potw), gold: false },
       { k: "Hattricks", v: String(w.awards.hattricks), gold: false },
+      { k: "Maestro (3+ assists)", v: String(w.awards.maestros), gold: false },
       { k: "Player of the Weak", v: String(w.awards.weak), gold: false },
     ];
     out.push({
@@ -324,7 +325,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
       bg: ["#2a1f00", "#000"],
       body: (
         <div className="relative flex h-full flex-col justify-center">
-          {(w.awards.potw > 0 || w.awards.hattricks > 0 || w.awards.season.length > 0) && <Confetti />}
+          {(w.awards.potw > 0 || w.awards.hattricks > 0 || w.awards.maestros > 0 || w.awards.season.length > 0) && <Confetti />}
           <In>
             <p className="text-2xl font-semibold text-white/70">Silverware</p>
           </In>

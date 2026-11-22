@@ -10,7 +10,7 @@ import { memberStats, recentRatings } from "@/lib/stats";
 import { ResultPill } from "@/components/stat-bits";
 import { ViewCardButton } from "@/components/view-card-button";
 import { TrophyCabinet } from "@/components/trophy-cabinet";
-import { allAwards, hattricks, milestonesFor } from "@/lib/awards";
+import { allAwards, hattricks, maestros, milestonesFor } from "@/lib/awards";
 import { weekStart } from "@/lib/honors";
 import { wrappedSeasons } from "@/lib/wrapped";
 
@@ -36,6 +36,7 @@ export default async function PlayerPage({
     hattricks(p.ea_gamertag),
     wrappedSeasons(p.ea_gamertag),
   ]);
+  const assistTricks = (await maestros(p.ea_gamertag)).filter((m) => new Date(m.playedAt) >= weekStart());
   const wrapList = wraps.filter((w) => w.finished || me?.role === "admin");
   const isMe = me?.id === p.id;
   const joined = new Date(p.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -112,7 +113,7 @@ export default async function PlayerPage({
       </p>
 
       <Reveal className="relative mt-12">
-        <TrophyCabinet slug={p.slug} name={p.display_name} awards={awards.get(p.id) ?? null} hattricks={tricks.filter((h) => new Date(h.playedAt) >= weekStart())} milestones={milestonesFor(ea)} />
+        <TrophyCabinet slug={p.slug} name={p.display_name} awards={awards.get(p.id) ?? null} hattricks={tricks.filter((h) => new Date(h.playedAt) >= weekStart())} maestros={assistTricks} milestones={milestonesFor(ea)} />
       </Reveal>
 
       {wrapList.length > 0 && (

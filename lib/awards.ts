@@ -118,6 +118,28 @@ export async function seasonStats(gamertag: string, season: Season = seasonAt())
 }
 
 export type Hattrick = { matchId: string; gamertag: string; goals: number; opponent: string; gf: number; ga: number; playedAt: string };
+export type Maestro = { matchId: string; gamertag: string; assists: number; opponent: string; gf: number; ga: number; playedAt: string };
+
+/** Every 3+ assist game in the archive ("Maestro"), newest first. */
+export async function maestros(gamertag?: string): Promise<Maestro[]> {
+  await ensureSchema();
+  const rows = (await db().query(
+    `SELECT mp.match_id, mp.gamertag, mp.assists, m.opponent_name, m.goals_for, m.goals_against, m.played_at
+     FROM ea_match_players mp JOIN ea_matches m USING (match_id)
+     WHERE mp.assists >= 3 ${gamertag ? "AND lower(mp.gamertag) = lower($1)" : ""}
+     ORDER BY m.played_at DESC`,
+    gamertag ? [gamertag] : [],
+  )) as { match_id: string; gamertag: string; assists: number; opponent_name: string | null; goals_for: number; goals_against: number; played_at: string }[];
+  return rows.map((r) => ({
+    matchId: r.match_id,
+    gamertag: r.gamertag,
+    assists: r.assists,
+    opponent: r.opponent_name ?? "Unknown",
+    gf: r.goals_for,
+    ga: r.goals_against,
+    playedAt: new Date(r.played_at).toISOString(),
+  }));
+}
 
 /** Every 3+ goal game in the archive, newest first. */
 export async function hattricks(gamertag?: string): Promise<Hattrick[]> {
