@@ -301,6 +301,49 @@ export async function buildWrapped(seasonN: number, gamertag: string): Promise<W
     season: (pa?.season ?? []).filter((x) => x.n === season.n).map((x) => (x.kind === "pots" ? "Player of the Season" : x.kind === "boot" ? "Golden Boot" : "Playmaker")),
   };
 
+  // ---- extras for the story ----
+  const nightsList = [...new Set(rows.map((r) => night(r.played_at)))].sort();
+  const seasonDays = { first: night(season.start.toISOString()), last: night(new Date(Math.min(end.getTime(), season.end.getTime()) - 1).toISOString()) };
+  const radar = [
+    { label: "Finishing", value: pct(per("goals")) },
+    { label: "Creativity", value: pct(per("assists")) },
+    { label: "Passing", value: pct((a) => (a.pa >= 20 ? a.pm / a.pa : null)) },
+    { label: "Defending", value: pct(per("tm")) },
+    { label: "Consistency", value: n >= 5 ? pct((a) => (a.matches >= 5 ? -a.sd : null)) : 0.5 },
+  ];
+  const facts: { title: string; value: string; sub: string }[] = [];
+  const hourGoals = new Map<number, number>();
+  rows.forEach((r) => {
+    if (!r.goals) return;
+    const h = Number(new Date(r.played_at).toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }));
+    hourGoals.set(h, (hourGoals.get(h) ?? 0) + r.goals);
+  });
+  const hot = [...hourGoals.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (hot) facts.push({ title: "Golden hour", value: `${String(hot[0]).padStart(2, "0")}:00`, sub: `${hot[1]} of your goals came in this hour` });
+  const days = new Map<string, number>();
+  rows.forEach((r) => {
+    const d = new Date(r.played_at).toLocaleDateString("en-GB", { weekday: "long", timeZone: "Asia/Jakarta" });
+    days.set(d, (days.get(d) ?? 0) + 1);
+  });
+  const fav = [...days.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (fav) facts.push({ title: "Favourite matchday", value: fav[0], sub: `${fav[1]} of your ${n} matches` });
+  const perNight = new Map<string, number>();
+  rows.forEach((r) => perNight.set(night(r.played_at), (perNight.get(night(r.played_at)) ?? 0) + r.goals + r.assists));
+  const bigNight = [...perNight.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (bigNight && bigNight[1] > 0)
+    facts.push({
+      title: "Biggest night",
+      value: `${bigNight[1]} G+A`,
+      sub: new Date(bigNight[0] + "T12:00:00+07:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long", timeZone: "Asia/Jakarta" }),
+    });
+  let run = 0;
+  let bestRun = 0;
+  rows.forEach((r) => {
+    run = r.result === "W" ? run + 1 : 0;
+    bestRun = Math.max(bestRun, run);
+  });
+  if (bestRun >= 2) facts.push({ title: "Longest win run", value: `${bestRun} in a row`, sub: "with you on the pitch" });
+
   // ---- club summary ----
   const [clubRow] = (await sql`
     SELECT count(*) FILTER (WHERE result = 'W')::int AS w, count(*) FILTER (WHERE result = 'D')::int AS d,
@@ -330,6 +373,10 @@ export async function buildWrapped(seasonN: number, gamertag: string): Promise<W
     partner,
     signature,
     awards,
+    nightsList,
+    seasonDays,
+    radar,
+    facts: facts.slice(0, 3),
     archetype: pick.a,
     archetypeStats: pick.stats,
     club: {

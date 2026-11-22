@@ -161,3 +161,18 @@ details[open] > .fold { animation: fold-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) 
 @keyframes spark-draw { from { stroke-dasharray: 1200; stroke-dashoffset: 1200; } to { stroke-dasharray: 1200; stroke-dashoffset: 0; } }
 .spark-draw { animation: spark-draw 1.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .spark-draw { animation: none; } }
+
+/* holographic sheen for the Wrapped nickname card */
+@keyframes holo-shift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+.holo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 20%, rgb(255 120 200 / 0.16), rgb(120 220 255 / 0.18), rgb(215 255 58 / 0.14), transparent 80%);
+  background-size: 200% 100%;
+  mix-blend-mode: screen;
+  animation: holo-shift 4s linear infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) { .holo::after { animation: none; } }

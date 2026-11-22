@@ -2,20 +2,28 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, animate, m, useReducedMotion } from "motion/react";
+import { AnimatePresence, animate, m, useReducedMotion, type Variants } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ARCHETYPES, type Mate, type Wrapped } from "@/lib/wrapped-meta";
 import { ShareButton } from "./share-button";
 
-const SLIDE_MS = 6500;
+const SLIDE_MS = 7000;
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-type Slide = { key: string; bg: [string, string]; share?: { card: string; label: string }; body: ReactNode };
+type Transition = "zoom" | "wipe" | "flip" | "rise";
+type Slide = { key: string; bg: [string, string]; fx: Transition; ms?: number; share?: { card: string; label: string }; body: ReactNode };
 
-/* ── small building blocks ─────────────────────────────────── */
+const ENTER: Record<Transition, Variants> = {
+  zoom: { hidden: { opacity: 0, scale: 1.12, filter: "blur(12px)" }, show: { opacity: 1, scale: 1, filter: "blur(0px)" }, exit: { opacity: 0, scale: 0.92, filter: "blur(8px)" } },
+  wipe: { hidden: { opacity: 0, clipPath: "inset(0 100% 0 0)" }, show: { opacity: 1, clipPath: "inset(0 0% 0 0)" }, exit: { opacity: 0, clipPath: "inset(0 0 0 100%)" } },
+  flip: { hidden: { opacity: 0, rotateX: -40, y: 40 }, show: { opacity: 1, rotateX: 0, y: 0 }, exit: { opacity: 0, rotateX: 30, y: -30 } },
+  rise: { hidden: { opacity: 0, y: 60 }, show: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -40, filter: "blur(6px)" } },
+};
 
-function CountUp({ to, decimals = 0, delay = 0.25 }: { to: number; decimals?: number; delay?: number }) {
+/* ── building blocks ───────────────────────────────────────── */
+
+function CountUp({ to, decimals = 0, delay = 0.25, duration = 1.4 }: { to: number; decimals?: number; delay?: number; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const reduce = useReducedMotion();
   useEffect(() => {
@@ -25,9 +33,9 @@ function CountUp({ to, decimals = 0, delay = 0.25 }: { to: number; decimals?: nu
       el.textContent = to.toFixed(decimals);
       return;
     }
-    const c = animate(0, to, { duration: 1.4, delay, ease: EASE, onUpdate: (v) => (el.textContent = v.toFixed(decimals)) });
+    const c = animate(0, to, { duration, delay, ease: EASE, onUpdate: (v) => (el.textContent = v.toFixed(decimals)) });
     return () => c.stop();
-  }, [to, decimals, delay, reduce]);
+  }, [to, decimals, delay, duration, reduce]);
   return (
     <span ref={ref} className="tabular-nums">
       {(0).toFixed(decimals)}
@@ -37,23 +45,23 @@ function CountUp({ to, decimals = 0, delay = 0.25 }: { to: number; decimals?: nu
 
 function In({ children, d = 0, className = "" }: { children: ReactNode; d?: number; className?: string }) {
   return (
-    <m.div
-      className={className}
-      initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={{ duration: 0.7, ease: EASE, delay: d }}
-    >
+    <m.div className={className} initial={{ opacity: 0, y: 18, filter: "blur(8px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ duration: 0.7, ease: EASE, delay: d }}>
       {children}
     </m.div>
   );
 }
 
+function Kicker({ children, color = "rgba(255,255,255,0.6)" }: { children: ReactNode; color?: string }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-[0.24em]" style={{ color }}>
+      {children}
+    </p>
+  );
+}
+
 function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)" }: { who: Mate; size?: number; ring?: string }) {
   return (
-    <span
-      className="grid shrink-0 place-items-center overflow-hidden rounded-full bg-white/10 font-bold"
-      style={{ width: size, height: size, boxShadow: `0 0 0 3px ${ring}`, fontSize: size / 3 }}
-    >
+    <span className="grid shrink-0 place-items-center overflow-hidden rounded-full bg-white/10 font-bold" style={{ width: size, height: size, boxShadow: `0 0 0 3px ${ring}`, fontSize: size / 3 }}>
       {who.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={who.avatar} alt="" className="size-full object-cover" />
@@ -64,23 +72,33 @@ function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)" }: { who: Mate; 
   );
 }
 
-function Big({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <p className={`text-display text-[clamp(64px,22vw,128px)] leading-[0.9] tracking-tight ${className}`}>{children}</p>;
+/** Portrait with the shirt number huge behind it — same look as the share cards. */
+function Portrait({ who, color, size = 170 }: { who: Mate; color: string; size?: number }) {
+  return (
+    <div className="relative grid place-items-center" style={{ height: size * 1.25 }}>
+      {who.number != null && (
+        <m.span
+          aria-hidden
+          className="text-display pointer-events-none absolute select-none leading-none"
+          style={{ fontSize: size * 1.45, letterSpacing: "-0.06em", backgroundImage: `linear-gradient(180deg, ${color}aa, transparent 75%)`, WebkitBackgroundClip: "text", color: "transparent" }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.1, ease: EASE }}
+        >
+          {who.number}
+        </m.span>
+      )}
+      <m.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}>
+        <Face who={who} size={size} ring={color} />
+      </m.span>
+    </div>
+  );
 }
 
+const CONFETTI = ["#D7FF3A", "#DDB168", "#8AB4FF", "#FF9F43", "#F5F5F7"];
 function Confetti() {
   const reduce = useReducedMotion();
-  const bits = useMemo(
-    () =>
-      Array.from({ length: 28 }, (_, i) => ({
-        x: (i * 37) % 100,
-        d: (i % 7) * 0.08,
-        r: (i * 53) % 360,
-        c: ["#D7FF3A", "#DDB168", "#8AB4FF", "#FF9F43", "#F5F5F7"][i % 5],
-        w: 6 + (i % 3) * 3,
-      })),
-    [],
-  );
+  const bits = useMemo(() => Array.from({ length: 32 }, (_, i) => ({ x: (i * 37) % 100, d: (i % 8) * 0.08, r: (i * 53) % 360, c: CONFETTI[i % CONFETTI.length], w: 6 + (i % 3) * 3 })), []);
   if (reduce) return null;
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -91,10 +109,107 @@ function Confetti() {
           style={{ left: `${b.x}%`, width: b.w, height: b.w * 1.6, background: b.c }}
           initial={{ y: -40, rotate: b.r, opacity: 0 }}
           animate={{ y: "105vh", rotate: b.r + 540, opacity: [0, 1, 1, 0] }}
-          transition={{ duration: 2.6 + (i % 4) * 0.35, delay: 0.2 + b.d, ease: "easeIn" }}
+          transition={{ duration: 2.6 + (i % 4) * 0.35, delay: 0.3 + b.d, ease: "easeIn" }}
         />
       ))}
     </div>
+  );
+}
+
+/** Ball grid: one ball per goal (or assist), dropping in like rain. */
+function BallGrid({ n, color, delay = 0.3 }: { n: number; color: string; delay?: number }) {
+  const show = Math.min(n, 60);
+  const step = Math.min(0.05, 1.4 / Math.max(show, 1));
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {Array.from({ length: show }, (_, i) => (
+        <m.span
+          key={i}
+          className="block size-3.5 rounded-full"
+          style={{ background: color, boxShadow: `0 0 10px ${color}66` }}
+          initial={{ opacity: 0, y: -40, scale: 0.4 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 420, damping: 18, delay: delay + i * step }}
+        />
+      ))}
+      {n > show && <span className="text-xs text-white/60">+{n - show}</span>}
+    </div>
+  );
+}
+
+/** Calendar of the season, lighting up the nights played. */
+function NightCalendar({ first, last, nights }: { first: string; last: string; nights: string[] }) {
+  const set = new Set(nights);
+  const days: { d: string; on: boolean; dow: number }[] = [];
+  const start = new Date(first + "T12:00:00Z");
+  const end = new Date(last + "T12:00:00Z");
+  for (let t = start.getTime(); t <= end.getTime(); t += 86400000) {
+    const d = new Date(t).toISOString().slice(0, 10);
+    days.push({ d, on: set.has(d), dow: (new Date(t).getUTCDay() + 6) % 7 });
+  }
+  const pad = days[0]?.dow ?? 0;
+  let lit = 0;
+  return (
+    <div className="grid grid-cols-7 gap-1.5">
+      {["M", "T", "W", "T", "F", "S", "S"].map((x, i) => (
+        <span key={i} className="text-center text-[10px] font-semibold text-white/40">
+          {x}
+        </span>
+      ))}
+      {Array.from({ length: pad }, (_, i) => (
+        <span key={`p${i}`} />
+      ))}
+      {days.map((x) => {
+        const order = x.on ? lit++ : 0;
+        return (
+          <m.span
+            key={x.d}
+            className="aspect-square rounded-md bg-white/[0.06]"
+            animate={x.on ? { backgroundColor: "#FF9F43", scale: [1, 1.25, 1], boxShadow: "0 0 14px rgba(255,159,67,0.6)" } : {}}
+            transition={{ delay: 0.5 + order * 0.12, duration: 0.5, ease: EASE }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Five-axis radar vs a club-average ring. */
+function Radar({ data, color }: { data: { label: string; value: number }[]; color: string }) {
+  const size = 260;
+  const c = size / 2;
+  const r = 92;
+  const pt = (i: number, v: number) => {
+    const a = (Math.PI * 2 * i) / data.length - Math.PI / 2;
+    return [c + Math.cos(a) * r * v, c + Math.sin(a) * r * v] as const;
+  };
+  const poly = (v: (i: number) => number) => data.map((_, i) => pt(i, v(i)).join(",")).join(" ");
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto w-full max-w-[290px]" aria-hidden>
+      {[0.25, 0.5, 0.75, 1].map((k) => (
+        <polygon key={k} points={poly(() => k)} fill="none" stroke="rgba(255,255,255,0.1)" />
+      ))}
+      <polygon points={poly(() => 0.5)} fill="none" stroke="rgba(255,255,255,0.35)" strokeDasharray="4 4" />
+      <m.polygon
+        points={poly((i) => Math.max(0.08, data[i].value))}
+        fill={`${color}44`}
+        stroke={color}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+        style={{ transformOrigin: `${c}px ${c}px` }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 1.1, ease: EASE, delay: 0.4 }}
+      />
+      {data.map((d, i) => {
+        const [x, y] = pt(i, 1.25);
+        return (
+          <text key={d.label} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fill="rgba(255,255,255,0.75)" fontSize="11" fontWeight="600">
+            {d.label}
+          </text>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -112,19 +227,19 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
 
   const slides: Slide[] = useMemo(() => {
     const out: Slide[] = [];
+
     out.push({
       key: "intro",
-      bg: ["#1b2a00", "#000"],
+      bg: ["#2a3d00", "#000"],
+      fx: "zoom",
       body: (
         <div className="flex h-full flex-col items-center justify-center text-center">
-          <In>
-            <Face who={w.player} size={132} ring="#D7FF3A" />
+          <Portrait who={w.player} color="#D7FF3A" size={150} />
+          <In d={0.5} className="mt-4">
+            <Kicker color="#D7FF3A">Revorfest Wrapped</Kicker>
           </In>
-          <In d={0.25} className="mt-8">
-            <p className="eyebrow text-accent">Revorfest Wrapped</p>
-          </In>
-          <In d={0.45}>
-            <h1 className="text-display mt-3 text-5xl leading-[0.95] md:text-6xl">
+          <In d={0.7}>
+            <h1 className="text-display mt-3 text-5xl leading-[0.95]">
               {first},<br />
               this was your
               <br />
@@ -132,294 +247,389 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
             </h1>
           </In>
           {!w.season.finished && (
-            <In d={0.7} className="mt-6">
-              <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-mute">Preview · season still running</span>
+            <In d={1} className="mt-5">
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">Admin preview · season still running</span>
             </In>
           )}
         </div>
       ),
     });
+
     out.push({
       key: "showing-up",
-      bg: ["#2a1600", "#000"],
+      bg: ["#3a1c00", "#000"],
+      fx: "wipe",
       body: (
         <div className="flex h-full flex-col justify-center">
-          <In>
-            <p className="text-2xl font-semibold text-white/70">You showed up for</p>
+          <Kicker color="#FF9F43">Showing up</Kicker>
+          <In d={0.1} className="mt-3 flex items-end gap-3">
+            <span className="text-display text-[clamp(72px,24vw,120px)] leading-[0.85] text-[#FF9F43]">
+              <CountUp to={w.nights} />
+            </span>
+            <span className="text-display mb-2 text-3xl">nights</span>
           </In>
-          <In d={0.15}>
-            <Big>
-              <CountUp to={w.matches} />
-            </Big>
-            <p className="text-display text-4xl">matches</p>
+          <In d={0.3} className="mt-2 text-lg text-white/75">
+            {w.matches} matches · {w.rank.matches === 1 ? "nobody played more" : `${ordinal(w.rank.matches)} most in the club`}
           </In>
-          <In d={0.6} className="mt-8 text-xl text-white/80">
-            across <b className="text-white">{w.nights} nights</b> of football.
-          </In>
-          <In d={0.9} className="mt-3 text-xl text-white/80">
-            {w.rank.matches === 1 ? "Nobody played more. 🔋" : `${ordinal(w.rank.matches)} most in the club out of ${w.clubPlayers}.`}
-          </In>
+          <div className="mt-8 rounded-3xl bg-white/[0.05] p-4 ring-1 ring-white/10">
+            <NightCalendar first={w.seasonDays.first} last={w.seasonDays.last} nights={w.nightsList} />
+          </div>
         </div>
       ),
     });
+
     out.push({
       key: "goals",
-      bg: ["#0f2a00", "#000"],
+      bg: ["#163a00", "#000"],
+      fx: "rise",
+      ms: 8000,
       share: { card: "goals", label: "Share goals" },
       body: (
         <div className="flex h-full flex-col justify-center">
-          <In>
-            <p className="text-2xl font-semibold text-white/70">You put away</p>
+          <Kicker color="#D7FF3A">Goals</Kicker>
+          <In className="mt-2">
+            <span className="text-display text-[clamp(72px,24vw,120px)] leading-[0.85] text-accent">
+              <CountUp to={w.goals} duration={1.8} />
+            </span>
           </In>
-          <In d={0.15}>
-            <Big className="text-accent">
-              <CountUp to={w.goals} />
-            </Big>
-            <p className="text-display text-4xl">goals</p>
-          </In>
-          <In d={0.55} className="mt-6">
-            <p className="text-display text-5xl">
-              <CountUp to={w.assists} delay={0.7} />
-              <span className="ml-3 text-2xl font-semibold text-white/70">assists</span>
-            </p>
-          </In>
-          <In d={0.9} className="mt-6 space-y-1 text-lg text-white/80">
-            <p>
-              Involved in <b className="text-white">{((w.goals + w.assists) / w.matches).toFixed(1)}</b> goals a match.
-            </p>
-            <p>
-              {ordinal(w.rank.goals)} in goals · {ordinal(w.rank.assists)} in assists.
-            </p>
+          <div className="mt-4">
+            <BallGrid n={w.goals} color="#D7FF3A" />
+          </div>
+          <div className="mt-8 flex items-end gap-3">
+            <Kicker color="#8AB4FF">Assists</Kicker>
+            <span className="text-display text-5xl leading-none">
+              <CountUp to={w.assists} delay={1.2} />
+            </span>
+          </div>
+          <div className="mt-3">
+            <BallGrid n={w.assists} color="#8AB4FF" delay={1.4} />
+          </div>
+          <In d={2} className="mt-6 text-sm text-white/70">
+            {((w.goals + w.assists) / w.matches).toFixed(1)} goal involvements a match · {ordinal(w.rank.goals)} in goals, {ordinal(w.rank.assists)} in assists
           </In>
         </div>
       ),
     });
+
     if (w.best)
       out.push({
         key: "best",
-        bg: ["#2a2200", "#000"],
+        bg: ["#3a2c00", "#000"],
+        fx: "flip",
         share: { card: "best", label: "Share best match" },
         body: (
-          <div className="flex h-full flex-col justify-center">
-            <In>
-              <p className="text-2xl font-semibold text-white/70">Your best night</p>
-            </In>
-            <In d={0.2} className="mt-4">
-              <Big className="text-gold">
-                <CountUp to={w.best.rating} decimals={1} />
-              </Big>
-              <p className="mt-1 text-lg text-white/70">match rating</p>
-            </In>
-            <In d={0.6} className="mt-8 rounded-3xl bg-white/[0.07] p-5">
-              <p className="text-sm text-mute">vs</p>
-              <p className="truncate text-2xl font-semibold">{w.best.opponent}</p>
-              <p className="mt-2 text-display text-4xl tabular-nums">
-                {w.best.gf}–{w.best.ga}
-              </p>
-              <p className="mt-2 text-white/80">
-                {w.best.goals} goals · {w.best.assists} assists ·{" "}
-                {new Date(w.best.playedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" })}
-              </p>
-            </In>
+          <div className="flex h-full flex-col justify-center" style={{ perspective: 1000 }}>
+            <Kicker color="#DDB168">Your best night</Kicker>
+            <m.div
+              className="gold-sheen relative mt-6 overflow-hidden rounded-[28px] bg-[linear-gradient(160deg,rgba(221,177,104,0.25),rgba(255,255,255,0.04))] ring-1 ring-gold/40"
+              initial={{ rotateY: -25, opacity: 0, y: 30 }}
+              animate={{ rotateY: 0, opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: EASE, delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between border-b border-dashed border-gold/40 px-6 py-4">
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Revorfest · Matchday</span>
+                <span className="text-xs text-white/60">{new Date(w.best.playedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" })}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-6 text-center">
+                <span className="truncate text-sm font-semibold">Revorfest</span>
+                <span className="text-display text-5xl tabular-nums">
+                  {w.best.gf}–{w.best.ga}
+                </span>
+                <span className="truncate text-sm font-semibold">{w.best.opponent}</span>
+              </div>
+              <div className="flex items-end justify-between border-t border-dashed border-gold/40 px-6 py-5">
+                <div>
+                  <p className="text-xs text-white/60">Your rating</p>
+                  <p className="text-display text-6xl leading-none text-gold">
+                    <CountUp to={w.best.rating} decimals={1} delay={0.8} />
+                  </p>
+                </div>
+                <div className="text-right text-sm text-white/80">
+                  <p>
+                    <b className="text-white">{w.best.goals}</b> goals
+                  </p>
+                  <p>
+                    <b className="text-white">{w.best.assists}</b> assists
+                  </p>
+                </div>
+              </div>
+              <span className="absolute -left-3 top-[44px] size-6 rounded-full bg-black" />
+              <span className="absolute -right-3 top-[44px] size-6 rounded-full bg-black" />
+            </m.div>
           </div>
         ),
       });
+
     if (w.victim)
       out.push({
         key: "victim",
-        bg: ["#2a0008", "#000"],
+        bg: ["#3a0010", "#000"],
+        fx: "zoom",
         share: { card: "victim", label: "Share favourite victim" },
         body: (
-          <div className="flex h-full flex-col justify-center">
-            <In>
-              <p className="text-2xl font-semibold text-white/70">Your favourite victim 😈</p>
-            </In>
-            <In d={0.25} className="mt-4">
-              <p className="text-display text-[clamp(40px,12vw,72px)] leading-none break-words">{w.victim.opponent}</p>
-            </In>
-            <In d={0.6} className="mt-8 text-xl text-white/80">
-              {w.victim.goals > 0 ? (
-                <p>
-                  You scored <b className="text-white">{w.victim.goals}</b> against them.
-                </p>
-              ) : (
-                <p>You kept beating them.</p>
-              )}
-              <p className="mt-2">
-                Record: <b className="text-accent">{w.victim.W}W</b> {w.victim.D}D <b className="text-depleted">{w.victim.L}L</b>
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <m.div
+              className="relative w-full max-w-sm rounded-[18px] bg-[#e9dcc2] px-6 py-7 text-[#2a1a0a] shadow-[0_30px_80px_-20px_rgba(255,69,58,0.45)]"
+              initial={{ rotate: -8, scale: 0.85, opacity: 0 }}
+              animate={{ rotate: -2, scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 160, damping: 14, delay: 0.15 }}
+            >
+              <p className="text-display text-5xl tracking-[0.12em]">WANTED</p>
+              <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.3em] opacity-70">by {first}</p>
+              <p className="text-display mt-5 break-words text-[clamp(28px,9vw,44px)] leading-none">{w.victim.opponent}</p>
+              <p className="mt-4 text-sm font-semibold opacity-80">
+                Record against them: {w.victim.W}W {w.victim.D}D {w.victim.L}L
               </p>
+              {w.victim.goals > 0 && (
+                <m.div
+                  className="absolute -right-4 -top-4 grid size-24 place-items-center rounded-full border-4 border-[#c0281f] bg-[#e9dcc2] text-[#c0281f]"
+                  initial={{ scale: 2.4, opacity: 0, rotate: 20 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 12 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.9 }}
+                >
+                  <span className="text-center leading-none">
+                    <span className="text-display block text-3xl">{w.victim.goals}</span>
+                    <span className="block text-[10px] font-black tracking-widest">GOALS</span>
+                  </span>
+                </m.div>
+              )}
+            </m.div>
+            <In d={1.2} className="mt-8 text-white/70">
+              Your favourite victim this season.
             </In>
           </div>
         ),
       });
+
     if (w.partner)
       out.push({
         key: "partner",
-        bg: ["#001a2a", "#000"],
+        bg: ["#001f3a", "#000"],
+        fx: "wipe",
         share: { card: "partner", label: "Share partner in crime" },
         body: (
-          <div className="flex h-full flex-col justify-center">
-            <In>
-              <p className="text-2xl font-semibold text-white/70">Partner in crime</p>
-            </In>
-            <In d={0.25} className="mt-8 flex items-center">
-              <Face who={w.player} size={104} />
-              <m.span
-                className="-ml-5"
-                initial={{ x: 40, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.8, ease: EASE, delay: 0.5 }}
-              >
-                <Face who={w.partner} size={104} ring="#8AB4FF" />
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <Kicker color="#8AB4FF">Partner in crime</Kicker>
+            <div className="relative mt-10 flex items-center justify-center">
+              <m.span initial={{ x: -120, opacity: 0 }} animate={{ x: 12, opacity: 1 }} transition={{ type: "spring", stiffness: 140, damping: 16, delay: 0.2 }}>
+                <Face who={w.player} size={124} ring="#D7FF3A" />
               </m.span>
-            </In>
-            <In d={0.7} className="mt-6">
-              <p className="text-display text-5xl">{w.partner.name}</p>
-            </In>
-            <In d={0.9} className="mt-4 text-xl text-white/80">
-              <p>
-                Together you won <b className="text-white">{Math.round(w.partner.rate * 100)}%</b>
+              <m.span initial={{ x: 120, opacity: 0 }} animate={{ x: -12, opacity: 1 }} transition={{ type: "spring", stiffness: 140, damping: 16, delay: 0.2 }}>
+                <Face who={w.partner} size={124} ring="#8AB4FF" />
+              </m.span>
+              <m.span
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 size-40 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                style={{ background: "radial-gradient(circle, rgba(255,255,255,0.8), rgba(138,180,255,0.3) 30%, transparent 65%)" }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [0, 1.4, 1], opacity: [0, 1, 0] }}
+                transition={{ duration: 1.1, delay: 0.75 }}
+              />
+            </div>
+            <In d={1} className="mt-8">
+              <p className="text-display text-4xl">
+                {first} <span className="text-white/40">+</span> {w.partner.name}
               </p>
-              <p className="mt-1">
-                {w.partner.wins} wins from {w.partner.together} matches side by side.
-              </p>
+            </In>
+            <m.div className="mt-6 rounded-full bg-[#8AB4FF] px-6 py-3 text-black" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 14, delay: 1.3 }}>
+              <span className="text-display text-3xl">{Math.round(w.partner.rate * 100)}%</span>
+              <span className="ml-2 text-sm font-semibold">win rate together</span>
+            </m.div>
+            <In d={1.6} className="mt-4 text-sm text-white/60">
+              {w.partner.wins} wins from {w.partner.together} matches side by side
             </In>
           </div>
         ),
       });
+
     out.push({
       key: "style",
-      bg: ["#14002a", "#000"],
+      bg: ["#1d0a3a", "#000"],
+      fx: "rise",
       body: (
         <div className="flex h-full flex-col justify-center">
-          <In>
-            <p className="text-2xl font-semibold text-white/70">Your home on the pitch</p>
+          <Kicker color="#C9A7FF">Your game</Kicker>
+          <In d={0.1} className="mt-2 flex items-baseline justify-between gap-3">
+            <span className="text-display text-5xl capitalize">{w.player.position ?? "All-rounder"}</span>
+            <span className="text-sm text-white/60">{w.avgRating.toFixed(1)} avg</span>
           </In>
-          <In d={0.2}>
-            <Big>{w.player.position ?? "—"}</Big>
-          </In>
+          <div className="mt-4">
+            <Radar data={w.radar} color="#C9A7FF" />
+          </div>
+          <p className="-mt-2 text-center text-[11px] text-white/45">Dashed ring = club average</p>
           {w.signature && (
-            <In d={0.6} className="mt-10 rounded-3xl bg-white/[0.07] p-5">
-              <p className="eyebrow">Signature stat</p>
-              <p className="text-display mt-2 text-5xl">{w.signature.value}</p>
-              <p className="mt-1 text-white/80">
-                {w.signature.label} · {w.signature.rank === 1 ? "best in the club" : `${ordinal(w.signature.rank)} in the club`}
-              </p>
+            <In d={1.2} className="mt-5 flex items-center justify-between rounded-2xl bg-white/[0.06] px-5 py-4 ring-1 ring-white/10">
+              <span>
+                <span className="block text-xs text-white/60">Signature stat · {w.signature.label}</span>
+                <span className="block text-sm text-white/80">{w.signature.rank === 1 ? "Best in the club" : `${ordinal(w.signature.rank)} in the club`}</span>
+              </span>
+              <span className="text-display text-4xl text-[#C9A7FF]">{w.signature.value}</span>
             </In>
           )}
-          <In d={0.9} className="mt-6 text-lg text-white/80">
-            {w.avgRating.toFixed(1)} average rating · {w.motm} Man of the Match
-          </In>
         </div>
       ),
     });
-    const cab = [
-      ...w.awards.season.map((s) => ({ k: s, v: "👑", gold: true })),
-      { k: "Player of the Week", v: String(w.awards.potw), gold: false },
-      { k: "Hattricks", v: String(w.awards.hattricks), gold: false },
-      { k: "Maestro (3+ assists)", v: String(w.awards.maestros), gold: false },
-      { k: "Player of the Weak", v: String(w.awards.weak), gold: false },
+
+    if (w.facts.length)
+      out.push({
+        key: "facts",
+        bg: ["#003a33", "#000"],
+        fx: "flip",
+        body: (
+          <div className="flex h-full flex-col justify-center" style={{ perspective: 1000 }}>
+            <Kicker color="#7EE0C3">Fun facts</Kicker>
+            <div className="mt-6 space-y-3">
+              {w.facts.map((f, k) => (
+                <m.div
+                  key={f.title}
+                  className="rounded-3xl bg-white/[0.06] p-5 ring-1 ring-white/10"
+                  initial={{ rotateX: -70, opacity: 0, y: 20 }}
+                  animate={{ rotateX: 0, opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: EASE, delay: 0.3 + k * 0.45 }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#7EE0C3]">{f.title}</p>
+                  <p className="text-display mt-1 text-4xl">{f.value}</p>
+                  <p className="mt-1 text-sm text-white/65">{f.sub}</p>
+                </m.div>
+              ))}
+            </div>
+          </div>
+        ),
+      });
+
+    const shelf = [
+      ...w.awards.season.map((s) => ({ k: s, v: 1, tone: "#DDB168", big: true })),
+      { k: "Player of the Week", v: w.awards.potw, tone: "#DDB168", big: false },
+      { k: "Hattricks", v: w.awards.hattricks, tone: "#D7FF3A", big: false },
+      { k: "Maestro", v: w.awards.maestros, tone: "#8AB4FF", big: false },
+      { k: "Player of the Weak", v: w.awards.weak, tone: "#FF453A", big: false },
     ];
+    const won = shelf.some((x) => x.v > 0 && x.tone !== "#FF453A");
     out.push({
       key: "awards",
-      bg: ["#2a1f00", "#000"],
+      bg: ["#3a2a00", "#000"],
+      fx: "zoom",
       body: (
         <div className="relative flex h-full flex-col justify-center">
-          {(w.awards.potw > 0 || w.awards.hattricks > 0 || w.awards.maestros > 0 || w.awards.season.length > 0) && <Confetti />}
-          <In>
-            <p className="text-2xl font-semibold text-white/70">Silverware</p>
-          </In>
-          <div className="mt-6 space-y-3">
-            {cab.map((c, k) => (
-              <In key={c.k} d={0.2 + k * 0.12}>
-                <div className={`flex items-center justify-between rounded-2xl px-5 py-4 ${c.gold ? "bg-gold/20 ring-1 ring-gold/50" : "bg-white/[0.07]"}`}>
-                  <span className={`text-lg font-semibold ${c.gold ? "text-gold" : ""}`}>{c.k}</span>
-                  <span className="text-display text-3xl tabular-nums">{c.v}</span>
-                </div>
-              </In>
+          {won && <Confetti />}
+          <Kicker color="#DDB168">Silverware</Kicker>
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            {shelf.map((c, k) => (
+              <m.div
+                key={c.k}
+                className={`relative overflow-hidden rounded-3xl p-4 ${c.big ? "col-span-2" : ""}`}
+                style={{
+                  background: c.v ? `linear-gradient(160deg, ${c.tone}2e, rgba(255,255,255,0.03))` : "rgba(255,255,255,0.03)",
+                  boxShadow: `inset 0 0 0 1px ${c.v ? `${c.tone}55` : "rgba(255,255,255,0.08)"}`,
+                }}
+                initial={{ y: -120, opacity: 0, rotate: k % 2 ? 6 : -6 }}
+                animate={{ y: 0, opacity: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 220, damping: 15, delay: 0.25 + k * 0.18 }}
+              >
+                <p className="text-display text-4xl leading-none" style={{ color: c.v ? c.tone : "rgba(255,255,255,0.25)" }}>
+                  {c.big ? "Winner" : c.v}
+                </p>
+                <p className={`mt-2 text-sm font-semibold ${c.v ? "" : "text-white/35"}`}>{c.k}</p>
+              </m.div>
             ))}
           </div>
           {w.awards.weak > 0 && (
-            <In d={0.9} className="mt-5 text-white/70">
-              …and yes, the Weak ones count too 🤡
+            <In d={1.6} className="mt-4 text-sm text-white/60">
+              …and yes, the Weak ones count too.
             </In>
           )}
         </div>
       ),
     });
+
     out.push({
       key: "nickname",
-      bg: ["#000", arch.color + "55"],
+      bg: ["#000", `${arch.color}66`],
+      fx: "zoom",
+      ms: 8000,
       share: { card: "nickname", label: "Share your nickname" },
       body: (
         <div className="flex h-full flex-col items-center justify-center text-center" style={{ perspective: 1200 }}>
           <In>
-            <p className="text-2xl font-semibold text-white/70">This season, you were…</p>
+            <Kicker>This season, you were</Kicker>
           </In>
           <m.div
-            className="gold-sheen mt-8 w-full max-w-sm rounded-[32px] p-7"
-            style={{ background: `linear-gradient(160deg, ${arch.color}33, rgba(255,255,255,0.04))`, boxShadow: `0 0 0 1px ${arch.color}66, 0 30px 80px -20px ${arch.color}55` }}
-            initial={{ rotateY: 180, opacity: 0, scale: 0.9 }}
+            className="holo relative mt-6 w-full max-w-[300px] overflow-hidden rounded-[30px] p-6 text-left"
+            style={{ background: `linear-gradient(160deg, ${arch.color}40, rgba(10,10,10,0.9) 55%)`, boxShadow: `0 0 0 1.5px ${arch.color}99, 0 40px 100px -30px ${arch.color}88` }}
+            initial={{ rotateY: 200, opacity: 0, scale: 0.85 }}
             animate={{ rotateY: 0, opacity: 1, scale: 1 }}
-            transition={{ duration: 1.1, ease: EASE, delay: 0.7 }}
+            transition={{ duration: 1.3, ease: EASE, delay: 0.5 }}
           >
-            <p className="text-6xl">{arch.emoji}</p>
-            <p className="text-display mt-4 text-5xl" style={{ color: arch.color }}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-display text-5xl leading-none" style={{ color: arch.color }}>
+                  {w.avgRating.toFixed(1)}
+                </p>
+                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-white/70">{w.player.position ?? "—"}</p>
+              </div>
+              <span className="text-display text-4xl text-white/25">{w.player.number != null ? `#${w.player.number}` : ""}</span>
+            </div>
+            <div className="mt-4 flex justify-center">
+              <Face who={w.player} size={120} ring={arch.color} />
+            </div>
+            <p className="text-display mt-4 text-center text-3xl">{w.player.name}</p>
+            <p className="text-display mt-1 text-center text-2xl" style={{ color: arch.color }}>
               {arch.title}
             </p>
-            <p className="mt-3 text-white/80">{arch.blurb}</p>
-            <div className="mt-6 grid grid-cols-3 gap-2">
+            <div className="mt-4 grid grid-cols-3 gap-1 border-t border-white/15 pt-3 text-center">
               {w.archetypeStats.map((s) => (
-                <div key={s.label} className="rounded-2xl bg-black/30 px-2 py-3">
-                  <p className="text-display text-2xl tabular-nums">{s.value}</p>
-                  <p className="text-[11px] text-white/60">{s.label}</p>
+                <div key={s.label}>
+                  <p className="text-display text-xl tabular-nums">{s.value}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-white/55">{s.label}</p>
                 </div>
               ))}
             </div>
           </m.div>
+          <In d={1.6} className="mt-5 text-sm text-white/70">
+            {arch.blurb}
+          </In>
         </div>
       ),
     });
+
     out.push({
       key: "club",
-      bg: ["#001f14", "#000"],
+      bg: ["#002a1c", "#000"],
+      fx: "wipe",
       share: { card: "club", label: "Share club season" },
       body: (
         <div className="flex h-full flex-col justify-center">
-          <In>
-            <p className="text-2xl font-semibold text-white/70">Revorfest's {w.season.name}</p>
-          </In>
-          <In d={0.2} className="mt-6 grid grid-cols-3 text-center">
-            <div>
-              <p className="text-display text-5xl text-accent">
-                <CountUp to={w.club.record.W} />
-              </p>
-              <p className="text-sm text-mute">Wins</p>
-            </div>
-            <div>
-              <p className="text-display text-5xl">
-                <CountUp to={w.club.record.D} />
-              </p>
-              <p className="text-sm text-mute">Draws</p>
-            </div>
-            <div>
-              <p className="text-display text-5xl text-depleted">
-                <CountUp to={w.club.record.L} />
-              </p>
-              <p className="text-sm text-mute">Losses</p>
-            </div>
-          </In>
-          <In d={0.45} className="mt-4 text-center text-lg text-white/80">
+          <Kicker color="#7EE0C3">Revorfest · {w.season.name}</Kicker>
+          <div className="mt-5 grid grid-cols-3 text-center">
+            {[
+              { k: "Wins", v: w.club.record.W, c: "text-accent" },
+              { k: "Draws", v: w.club.record.D, c: "" },
+              { k: "Losses", v: w.club.record.L, c: "text-depleted" },
+            ].map((x, k) => (
+              <In key={x.k} d={0.15 + k * 0.12}>
+                <p className={`text-display text-6xl ${x.c}`}>
+                  <CountUp to={x.v} delay={0.3 + k * 0.12} />
+                </p>
+                <p className="text-xs uppercase tracking-widest text-white/50">{x.k}</p>
+              </In>
+            ))}
+          </div>
+          <m.div className="mt-6 flex h-3 overflow-hidden rounded-full" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} style={{ transformOrigin: "left" }} transition={{ duration: 1, ease: EASE, delay: 0.6 }}>
+            <span className="bg-accent" style={{ flex: w.club.record.W }} />
+            <span className="bg-white/40" style={{ flex: w.club.record.D }} />
+            <span className="bg-depleted" style={{ flex: w.club.record.L }} />
+          </m.div>
+          <In d={0.8} className="mt-3 text-center text-sm text-white/70">
             {w.club.gf} scored · {w.club.ga} conceded · {w.club.matches} matches
           </In>
-          <div className="mt-8 space-y-2">
+          <div className="mt-7 space-y-2">
             {w.club.top.map((t, k) => (
-              <In key={t.name} d={0.6 + k * 0.15}>
-                <div className="flex items-center gap-3 rounded-2xl bg-white/[0.07] px-4 py-3">
-                  <span className={`w-5 font-semibold ${k === 0 ? "text-gold" : "text-mute"}`}>{k + 1}</span>
+              <In key={t.name} d={1 + k * 0.15}>
+                <div className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${k === 0 ? "bg-gold/15 ring-1 ring-gold/40" : "bg-white/[0.06]"}`}>
+                  <span className={`w-5 font-semibold ${k === 0 ? "text-gold" : "text-white/50"}`}>{k + 1}</span>
                   <Face who={t} size={40} ring={k === 0 ? "#DDB168" : "rgba(255,255,255,0.15)"} />
                   <span className="min-w-0 flex-1 truncate font-semibold">{t.name}</span>
-                  <span className="font-semibold tabular-nums">{t.rating.toFixed(1)}</span>
+                  <span className={`font-semibold tabular-nums ${k === 0 ? "text-gold" : ""}`}>{t.rating.toFixed(1)}</span>
                 </div>
               </In>
             ))}
@@ -427,47 +637,66 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
         </div>
       ),
     });
+
     out.push({
       key: "summary",
-      bg: [arch.color + "40", "#000"],
+      bg: [`${arch.color}55`, "#000"],
+      fx: "zoom",
+      ms: 9000,
       share: { card: "summary", label: "Share my Wrapped" },
       body: (
         <div className="flex h-full flex-col justify-center">
-          <In className="gold-sheen rounded-[32px] bg-white/[0.07] p-6 ring-1 ring-white/10">
-            <div className="flex items-center gap-4">
-              <Face who={w.player} size={72} ring={arch.color} />
+          <m.div
+            className="gold-sheen relative overflow-hidden rounded-[32px] p-6 ring-1 ring-white/15"
+            style={{ background: `linear-gradient(170deg, ${arch.color}33, rgba(255,255,255,0.04) 45%, rgba(0,0,0,0.4))` }}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.9, ease: EASE }}
+          >
+            {w.player.number != null && (
+              <span aria-hidden className="text-display pointer-events-none absolute -right-4 -top-8 text-[160px] leading-none" style={{ color: `${arch.color}22` }}>
+                {w.player.number}
+              </span>
+            )}
+            <Kicker color={arch.color}>{w.season.name} · Wrapped</Kicker>
+            <div className="mt-4 flex items-center gap-4">
+              <Face who={w.player} size={76} ring={arch.color} />
               <div className="min-w-0">
-                <p className="eyebrow">{w.season.name} Wrapped</p>
-                <p className="truncate text-2xl font-semibold">{w.player.name}</p>
-                <p className="text-sm" style={{ color: arch.color }}>
-                  {arch.emoji} {arch.title}
+                <p className="truncate text-3xl font-semibold">{w.player.name}</p>
+                <p className="text-display text-xl" style={{ color: arch.color }}>
+                  {arch.title}
                 </p>
               </div>
             </div>
             <div className="mt-6 grid grid-cols-3 gap-y-5 text-center">
-              {[
-                ["Matches", w.matches],
-                ["Goals", w.goals],
-                ["Assists", w.assists],
-                ["Rating", w.avgRating.toFixed(1)],
-                ["MOTM", w.motm],
-                ["POTW", w.awards.potw],
-              ].map(([k, v]) => (
-                <div key={k}>
+              {(
+                [
+                  ["Matches", w.matches],
+                  ["Goals", w.goals],
+                  ["Assists", w.assists],
+                  ["Rating", w.avgRating.toFixed(1)],
+                  ["MOTM", w.motm],
+                  ["POTW", w.awards.potw],
+                ] as const
+              ).map(([k, v], idx) => (
+                <In key={k} d={0.3 + idx * 0.08}>
                   <p className="text-display text-3xl tabular-nums">{v}</p>
-                  <p className="text-[11px] text-mute">{k}</p>
-                </div>
+                  <p className="text-[10px] uppercase tracking-widest text-white/55">{k}</p>
+                </In>
               ))}
             </div>
-            {w.best && (
-              <p className="mt-6 border-t border-white/10 pt-4 text-sm text-white/80">
-                Best night: <b className="text-white">{w.best.rating.toFixed(1)}</b> vs {w.best.opponent}
-              </p>
-            )}
-            {w.partner && <p className="mt-1 text-sm text-white/80">Partner in crime: {w.partner.name}</p>}
-          </In>
-          <In d={0.5} className="mt-6 text-center text-white/60">
-            See you next season. #WeAreRevorfest
+            <div className="mt-6 space-y-1.5 border-t border-white/10 pt-4 text-sm text-white/80">
+              {w.best && (
+                <p>
+                  Best night · <b className="text-white">{w.best.rating.toFixed(1)}</b> vs {w.best.opponent}
+                </p>
+              )}
+              {w.partner && <p>Partner in crime · {w.partner.name}</p>}
+              {w.victim && <p>Favourite victim · {w.victim.opponent}</p>}
+            </div>
+          </m.div>
+          <In d={1} className="mt-5 text-center text-sm text-white/55">
+            See you next season · #WeAreRevorfest
           </In>
         </div>
       ),
@@ -477,8 +706,8 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
 
   const last = slides.length - 1;
   const go = useCallback((d: number) => setI((x) => Math.min(Math.max(x + d, 0), last)), [last]);
+  const slideMs = slides[i]?.ms ?? SLIDE_MS;
 
-  // auto-advance with a pausable timer
   const started = useRef(0);
   const elapsed = useRef(0);
   useEffect(() => {
@@ -491,7 +720,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
     let raf = 0;
     const tick = (t: number) => {
       elapsed.current = t - started.current;
-      const p = Math.min(elapsed.current / SLIDE_MS, 1);
+      const p = Math.min(elapsed.current / slideMs, 1);
       setProgress(p);
       if (p >= 1) {
         if (i < last) go(1);
@@ -501,7 +730,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [i, paused, go, last]);
+  }, [i, paused, go, last, slideMs]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -532,7 +761,6 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
   // portalled to <body>: page-transition wrappers use transforms, which would break position:fixed
   return createPortal(
     <div className="fixed inset-0 z-[80] overflow-hidden bg-black text-chalk">
-      {/* living background */}
       <m.div
         aria-hidden
         className="absolute inset-0"
@@ -542,7 +770,6 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
       <div aria-hidden className="ken-burns absolute -inset-10 opacity-40" style={{ background: "radial-gradient(40% 30% at 70% 30%, rgba(255,255,255,0.08), transparent 70%)" }} />
 
       <div className="relative mx-auto flex h-full max-w-md flex-col px-6 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-[calc(env(safe-area-inset-top)+14px)]">
-        {/* progress */}
         <div className="flex gap-1.5">
           {slides.map((x, k) => (
             <div key={x.key} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/20">
@@ -551,7 +778,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
           ))}
         </div>
         <div className="mt-3 flex items-center justify-between">
-          <p className="text-xs font-semibold tracking-[0.18em] text-white/70 uppercase">Revorfest · {w.season.name}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Revorfest · {w.season.name}</p>
           <button onClick={close} aria-label="Close" className="grid size-9 place-items-center rounded-full bg-white/10 transition active:scale-95">
             <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
               <path d="M6 6l12 12M18 6 6 18" />
@@ -559,36 +786,28 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
           </button>
         </div>
 
-        {/* slide */}
         <div
           className="relative flex-1 select-none"
+          style={{ perspective: 1400 }}
           onPointerDown={() => {
             downAt.current = performance.now();
             setPaused(true);
           }}
           onPointerUp={(e) => {
             setPaused(false);
-            if (performance.now() - downAt.current > 350) return; // that was a hold
+            if (performance.now() - downAt.current > 350) return;
             const r = e.currentTarget.getBoundingClientRect();
             go(e.clientX - r.left < r.width * 0.3 ? -1 : 1);
           }}
           onPointerLeave={() => setPaused(false)}
         >
           <AnimatePresence mode="wait">
-            <m.div
-              key={s.key}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02, filter: "blur(6px)" }}
-              transition={{ duration: 0.4, ease: EASE }}
-            >
+            <m.div key={s.key} className="absolute inset-0" variants={ENTER[s.fx]} initial="hidden" animate="show" exit="exit" transition={{ duration: 0.55, ease: EASE }}>
               {s.body}
             </m.div>
           </AnimatePresence>
         </div>
 
-        {/* footer */}
         <div className="flex min-h-12 items-center justify-between gap-3" onPointerDown={(e) => e.stopPropagation()}>
           {s.share && w.player.slug ? (
             <div onClick={() => setPaused(true)}>

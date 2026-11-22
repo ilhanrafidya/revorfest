@@ -30,6 +30,12 @@ export type Wrapped = {
   partner: (Mate & { together: number; wins: number; rate: number }) | null;
   signature: { label: string; value: string; rank: number } | null;
   awards: { potw: number; weak: number; hattricks: number; maestros: number; season: string[] };
+  /** YYYY-MM-DD (WIB) of every night played, and the season's first/last day for the calendar */
+  nightsList: string[];
+  seasonDays: { first: string; last: string };
+  /** 0..1 percentile vs club teammates */
+  radar: { label: string; value: number }[];
+  facts: { title: string; value: string; sub: string }[];
   archetype: Archetype;
   archetypeStats: { label: string; value: string }[];
   club: {
