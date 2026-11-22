@@ -16,7 +16,7 @@ type Slide = { key: string; bg: [string, string]; fx: Transition; ms?: number; s
 
 const ENTER: Record<Transition, Variants> = {
   zoom: { hidden: { opacity: 0, scale: 1.12, filter: "blur(12px)" }, show: { opacity: 1, scale: 1, filter: "blur(0px)" }, exit: { opacity: 0, scale: 0.92, filter: "blur(8px)" } },
-  wipe: { hidden: { opacity: 0, clipPath: "inset(0 100% 0 0)" }, show: { opacity: 1, clipPath: "inset(0 0% 0 0)" }, exit: { opacity: 0, clipPath: "inset(0 0 0 100%)" } },
+  wipe: { hidden: { opacity: 0, clipPath: "inset(0% 100% 0% 0%)" }, show: { opacity: 1, clipPath: "inset(0% 0% 0% 0%)" }, exit: { opacity: 0, clipPath: "inset(0% 0% 0% 100%)" } },
   flip: { hidden: { opacity: 0, rotateX: -40, y: 40 }, show: { opacity: 1, rotateX: 0, y: 0 }, exit: { opacity: 0, rotateX: 30, y: -30 } },
   rise: { hidden: { opacity: 0, y: 60 }, show: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -40, filter: "blur(6px)" } },
 };
@@ -185,7 +185,7 @@ function Radar({ data, color }: { data: { label: string; value: number }[]; colo
   };
   const poly = (v: (i: number) => number) => data.map((_, i) => pt(i, v(i)).join(",")).join(" ");
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto w-full max-w-[290px]" aria-hidden>
+    <svg viewBox={`-44 -8 ${size + 88} ${size + 16}`} className="mx-auto w-full max-w-[330px]" aria-hidden>
       {[0.25, 0.5, 0.75, 1].map((k) => (
         <polygon key={k} points={poly(() => k)} fill="none" stroke="rgba(255,255,255,0.1)" />
       ))}
