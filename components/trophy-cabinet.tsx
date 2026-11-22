@@ -74,7 +74,7 @@ export function TrophyCabinet({
       group: "maestro",
       key: `ma-${m.matchId}`,
       tone: "blue",
-      icon: "trophy",
+      icon: "assist",
       title: m.assists >= 5 ? "Assist machine" : m.assists === 4 ? "Grand Maestro" : "Maestro",
       sub: `${m.assists} assists vs ${m.opponent} · ${m.gf}–${m.ga}`,
       url: `/share/hattrick?kind=assist&match=${m.matchId}&tag=${encodeURIComponent(m.gamertag)}`,
