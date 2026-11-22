@@ -4,7 +4,7 @@ import { PlayFilled } from "./icons";
 import { HomeClipTile } from "./home-clip-tile";
 import { club as demo, gotw, nextMatchday, potw as demoPotw, topAssist as demoAssist, topScorer as demoScorer, wpotw as demoWpotw } from "@/lib/mock";
 import { PlayerAvatar } from "./player-avatar";
-import { clubOverall, lastSync, recentMatches } from "@/lib/stats";
+import { clubHistory, clubOverall, lastSync, leagueForm, recentMatches } from "@/lib/stats";
 import { seasonAt } from "@/lib/seasons";
 import { seasonWinners } from "@/lib/awards";
 import { rangeTable } from "@/lib/honors";
@@ -48,15 +48,20 @@ async function loadOverview() {
   try {
     const thisWeek = weekStart();
     const season = seasonAt();
-    const [overall, recent, now, prev, sync, seasonTable] = await Promise.all([
+    const [overall, recent, now, prev, sync, seasonTable, history, lform] = await Promise.all([
       clubOverall(),
       recentMatches(5),
       honorsFor(thisWeek),
       honorsFor(new Date(thisWeek.getTime() - 7 * 86400000)),
       lastSync(),
       rangeTable(season.start, new Date()),
+      clubHistory(30),
+      leagueForm(5),
     ]);
     const race = seasonWinners(seasonTable);
+    const skills = history.filter((h) => h.skill != null).map((h) => ({ at: new Date(h.at).getTime(), v: h.skill as number }));
+    const weekAgo = Date.now() - 7 * 86400000;
+    const base = skills.find((x) => x.at >= weekAgo) ?? skills[0];
     if (!overall) return null;
     const last = recent[0];
     const potwLine = prev.potw ?? now.potw;
@@ -71,6 +76,14 @@ async function loadOverview() {
         division: clampDiv(overall.currentDivision),
         bestDivision: clampDiv(overall.bestDivision),
         form: recent.map((m) => m.result).reverse(),
+        road: {
+          points: overall.points,
+          promotions: overall.promotions,
+          skill: overall.skillRating,
+          skillDelta: overall.skillRating != null && base ? overall.skillRating - base.v : null,
+          spark: skills.map((x) => x.v),
+          leagueForm: lform,
+        },
         lastMatch: last ? { opponent: last.opponent_name ?? "Unknown", score: `${last.goals_for}–${last.goals_against}` } : null,
       },
       potw: potwLine
@@ -86,6 +99,28 @@ async function loadOverview() {
   } catch {
     return null;
   }
+}
+
+function Spark({ values }: { values: number[] }) {
+  const w = 300;
+  const h = 56;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 6 - ((v - min) / span) * (h - 12)).toFixed(1)}`);
+  const up = values[values.length - 1] >= values[0];
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-14 w-full" aria-hidden>
+      <defs>
+        <linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor={up ? "#D7FF3A" : "#FF453A"} stopOpacity="0.25" />
+          <stop offset="1" stopColor={up ? "#D7FF3A" : "#FF453A"} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,${h} ${pts.join(" ")} ${w},${h}`} fill="url(#spark-fill)" />
+      <polyline points={pts.join(" ")} fill="none" stroke={up ? "#D7FF3A" : "#FF453A"} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" className="spark-draw" />
+    </svg>
+  );
 }
 
 function Initials({ name, className = "" }: { name: string; className?: string }) {
@@ -111,6 +146,7 @@ export async function Overview() {
     ...demo,
     division: 4,
     bestDivision: 4,
+    road: { points: 23, promotions: 2, skill: 1402, skillDelta: 38, spark: [1364, 1371, 1368, 1380, 1392, 1402], leagueForm: ["W", "W", "D", "L", "W"] as ("W" | "D" | "L")[] },
     lastMatch: demo.lastMatch,
   };
   const potw = real ? real.potw : { ...demoPotw, avatar: null, live: false };
@@ -230,6 +266,63 @@ export async function Overview() {
             </div>
           </TiltCard>
         </Reveal>
+
+        {/* Road to Division */}
+        {club.division != null && club.division > 0 && (
+          <Reveal delay={0.05} className="col-span-2">
+            <TiltCard className="p-5 md:p-6" background="radial-gradient(70% 80% at 100% 0%, rgb(215 255 58 / 0.12), transparent 70%)">
+              <div className="flex h-full flex-col gap-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="eyebrow">Road to {divLabel(club.division - 1)}</p>
+                  {club.road.promotions != null && <p className="text-xs text-mute">{club.road.promotions} promotions so far</p>}
+                </div>
+                <div className="flex items-end gap-3">
+                  <span className="text-display text-5xl">Div {club.division}</span>
+                  <svg viewBox="0 0 24 24" className="mb-2 size-6 text-mute" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                  <span className={`text-display text-3xl ${club.division - 1 === 0 ? "text-gradient" : "text-mute"}`}>{club.division - 1 === 0 ? "Elite" : `Div ${club.division - 1}`}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-white/[0.04] p-3">
+                    <p className="text-xs text-mute">League points</p>
+                    <p className="text-display mt-1 text-3xl">{club.road.points != null ? <Ticker value={club.road.points} /> : "—"}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/[0.04] p-3">
+                    <p className="text-xs text-mute">Skill rating</p>
+                    <p className="text-display mt-1 text-3xl">{club.road.skill != null ? <Ticker value={club.road.skill} /> : "—"}</p>
+                    {club.road.skillDelta != null && club.road.skillDelta !== 0 && (
+                      <p className={`text-xs font-semibold ${club.road.skillDelta > 0 ? "text-accent" : "text-depleted"}`}>
+                        {club.road.skillDelta > 0 ? "+" : ""}
+                        {club.road.skillDelta} this week
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {club.road.spark.length >= 2 ? (
+                  <Spark values={club.road.spark} />
+                ) : (
+                  <p className="text-xs text-mute">Skill rating trend builds up as matches sync.</p>
+                )}
+                {club.road.leagueForm.length > 0 && (
+                  <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
+                    <p className="text-xs text-mute">League form</p>
+                    <div className="flex gap-1.5">
+                      {club.road.leagueForm.map((r, k) => (
+                        <span
+                          key={k}
+                          className={`grid size-6 place-items-center rounded-full text-[10px] font-bold ${r === "W" ? "bg-accent text-black" : r === "L" ? "bg-depleted/80 text-white" : "bg-white/15"}`}
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TiltCard>
+          </Reveal>
+        )}
 
         {/* POTW */}
         <Reveal className="col-span-2 md:row-span-2">

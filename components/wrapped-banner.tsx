@@ -15,7 +15,7 @@ export async function WrappedBanner() {
     WHERE p.id = ${me.id} AND m.played_at >= ${s.start.toISOString()} AND m.played_at < ${s.end.toISOString()}`) as { n: number }[];
   if (!row?.n) return null;
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
+    <div className="mx-auto max-w-6xl space-y-2 px-4 pt-4 md:px-6">
       <Link
         href={`/wrapped/${s.n}/${me.slug}`}
         className="gold-sheen group relative flex items-center gap-4 overflow-hidden rounded-[28px] p-5 ring-1 ring-white/10 transition active:scale-[0.99] md:p-6"
@@ -28,6 +28,11 @@ export async function WrappedBanner() {
           <span className="block text-sm text-white/70">{row.n} matches, one story. Tap to open.</span>
         </span>
         <span className="text-2xl text-white/70 transition group-hover:translate-x-1">›</span>
+      </Link>
+      <Link href={`/awards/${s.n}`} className="flex items-center gap-3 rounded-2xl bg-gold/10 px-4 py-3 text-sm ring-1 ring-gold/25 transition active:scale-[0.99]">
+        <span>🏆</span>
+        <span className="min-w-0 flex-1 font-semibold">{s.name} Awards Night is live</span>
+        <span className="text-mute">›</span>
       </Link>
     </div>
   );

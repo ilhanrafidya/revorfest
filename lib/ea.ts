@@ -111,6 +111,8 @@ export type ClubOverall = {
   skillRating: number | null;
   currentDivision: number | null;
   bestDivision: number | null;
+  points: number | null;
+  promotions: number | null;
 };
 
 /** Merges overallStats + allTimeLeaderboard search into one summary. */
@@ -134,6 +136,8 @@ export function parseOverall(overall: unknown, leaderboard: unknown): ClubOveral
     skillRating: maybe(o.skillRating ?? lb.skillRating),
     currentDivision: maybe(lb.currentDivision ?? o.currentDivision),
     bestDivision: maybe(o.bestDivision ?? lb.bestDivision),
+    points: maybe(lb.points),
+    promotions: maybe(o.promotions ?? lb.promotions),
   };
 }
 

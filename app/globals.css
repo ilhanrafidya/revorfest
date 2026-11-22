@@ -157,3 +157,7 @@ details[open] > .fold { animation: fold-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) 
 @media (prefers-reduced-motion: reduce) {
   .ken-burns, .soft-ping::before, .gold-sheen::after, details[open] > .fold, .fade-up-in { animation: none; }
 }
+
+@keyframes spark-draw { from { stroke-dasharray: 1200; stroke-dashoffset: 1200; } to { stroke-dasharray: 1200; stroke-dashoffset: 0; } }
+.spark-draw { animation: spark-draw 1.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) { .spark-draw { animation: none; } }

@@ -4,6 +4,7 @@ import { parseMatches, type ParsedMatch, type ParsedMatchPlayer } from "@/lib/ea
 import { authorizeIngest } from "@/lib/ingest-auth";
 import { announcePending } from "@/lib/push";
 import { cleanupLosingUploads } from "@/lib/clip-storage";
+import { recordClubHistory } from "@/lib/stats";
 
 export const maxDuration = 30;
 
@@ -38,6 +39,8 @@ export async function POST(req: Request) {
                 ON CONFLICT (kind) DO UPDATE SET data = excluded.data, fetched_at = excluded.fetched_at`;
     }
   }
+
+  await recordClubHistory().catch(() => null);
 
   // Matches — EA only returns the most recent few, so every sync archives what it sees.
   const matches: ParsedMatch[] = [];

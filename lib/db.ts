@@ -150,10 +150,17 @@ const SCHEMA = [
   `UPDATE players SET ea_gamertag = 'MikahNmkl777'
      WHERE lower(display_name) = 'namcuy' AND lower(ea_gamertag) <> 'mikahnmkl777'
        AND NOT EXISTS (SELECT 1 FROM players o WHERE lower(o.ea_gamertag) = 'mikahnmkl777')`,
+  // v9 — club progress over time (skill rating / league points / division), for Road to Division
+  `CREATE TABLE IF NOT EXISTS club_history (
+    at timestamptz PRIMARY KEY DEFAULT now(),
+    skill int,
+    points int,
+    division int
+  )`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 
 let ready: Promise<void> | null = null;
 

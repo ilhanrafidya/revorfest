@@ -195,3 +195,37 @@ export async function unlinkedGamertags(): Promise<string[]> {
   const names = new Set<string>([...parseMembers(members).map((m) => m.name), ...seen.map((s) => s.gamertag)]);
   return [...names].filter((n) => !index.has(n.toLowerCase())).sort((a, b) => a.localeCompare(b));
 }
+
+
+/** Remembers skill rating / league points / division — one row per change, at most hourly otherwise. */
+export async function recordClubHistory() {
+  const o = await clubOverall();
+  if (!o || (o.skillRating == null && o.points == null)) return;
+  const [last] = (await db()`SELECT at, skill, points, division FROM club_history ORDER BY at DESC LIMIT 1`) as {
+    at: string;
+    skill: number | null;
+    points: number | null;
+    division: number | null;
+  }[];
+  const changed = !last || last.skill !== o.skillRating || last.points !== o.points || last.division !== o.currentDivision;
+  const stale = !last || Date.now() - new Date(last.at).getTime() > 6 * 3600_000;
+  if (changed || stale) await db()`INSERT INTO club_history (skill, points, division) VALUES (${o.skillRating}, ${o.points}, ${o.currentDivision}) ON CONFLICT DO NOTHING`;
+}
+
+export async function clubHistory(days = 30) {
+  await ensureSchema();
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  return (await db()`SELECT at, skill, points, division FROM club_history WHERE at >= ${since} ORDER BY at`) as {
+    at: string;
+    skill: number | null;
+    points: number | null;
+    division: number | null;
+  }[];
+}
+
+/** Last few league results (oldest → newest). */
+export async function leagueForm(limit = 5) {
+  await ensureSchema();
+  const rows = (await db()`SELECT result FROM ea_matches WHERE match_type = 'leagueMatch' ORDER BY played_at DESC LIMIT ${limit}`) as { result: "W" | "D" | "L" }[];
+  return rows.map((r) => r.result).reverse();
+}
