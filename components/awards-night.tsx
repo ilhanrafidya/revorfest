@@ -175,10 +175,7 @@ export function AwardsNight({ season, awards, preview }: { season: { n: number; 
                         >
                           <Face who={n} size={48} ring={lit ? a.color : "rgba(255,255,255,0.15)"} />
                           <span className="min-w-0 flex-1 truncate text-lg font-semibold">{n.name}</span>
-                          <span className="text-right">
-                            <span className="block font-semibold tabular-nums">{n.value}</span>
-                            <span className="block text-[11px] text-mute">{n.matches} MP</span>
-                          </span>
+                          <span className="grid size-9 place-items-center rounded-full bg-white/[0.06] text-sm font-semibold text-white/40">?</span>
                         </m.div>
                       );
                     })}
@@ -207,6 +204,19 @@ export function AwardsNight({ season, awards, preview }: { season: { n: number; 
                         {a.unit} · {a.nominees[0].matches} MP
                       </p>
                     </m.div>
+                    {a.nominees.length > 1 && (
+                      <m.div className="mt-4 space-y-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1, duration: 0.6, ease: EASE }}>
+                        {a.nominees.slice(1).map((n, k) => (
+                          <div key={n.name} className="flex items-center gap-3 rounded-2xl bg-white/[0.05] px-4 py-2.5 text-sm">
+                            <span className="w-4 text-mute">{k + 2}</span>
+                            <Face who={n} size={28} ring="rgba(255,255,255,0.15)" />
+                            <span className="min-w-0 flex-1 truncate">{n.name}</span>
+                            <span className="font-semibold tabular-nums">{n.value}</span>
+                            <span className="w-12 text-right text-[11px] text-mute">{n.matches} MP</span>
+                          </div>
+                        ))}
+                      </m.div>
+                    )}
                   </div>
                 )}
               </m.div>
