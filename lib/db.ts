@@ -161,10 +161,16 @@ const SCHEMA = [
   `UPDATE matchdays SET scheduled_at = '2026-11-23T00:00:00+07:00'
      WHERE note ILIKE '%surviving division 3%'
        AND scheduled_at >= '2026-11-21T23:00:00+07:00' AND scheduled_at < '2026-11-22T01:00:00+07:00'`,
+  // v11 — same fix, in case it was set to the *next* Sunday (29 Nov 00:00 WIB) instead
+  `UPDATE matchdays SET scheduled_at = '2026-11-23T00:00:00+07:00'
+     WHERE note ILIKE '%surviving division 3%'
+       AND (extract(hour from scheduled_at AT TIME ZONE 'Asia/Jakarta') = 0)
+       AND scheduled_at >= '2026-11-21T00:00:00+07:00' AND scheduled_at < '2026-12-01T00:00:00+07:00'
+       AND scheduled_at <> '2026-11-23T00:00:00+07:00'`,
 ];
 
 /** Bump when SCHEMA changes so existing databases get the new tables. */
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 
 let ready: Promise<void> | null = null;
 
