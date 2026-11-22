@@ -359,11 +359,12 @@ function RaceTable({ table }: { table: WeeklyLine[] }) {
 
 function Boards({ b }: { b: Awaited<ReturnType<typeof leaderboards>> }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-5">
       <Board title="Top Scorer" unit="goals" rows={b.goals} value={(m) => m.goals} />
       <Board title="Top Assist" unit="assists" rows={b.assists} value={(m) => m.assists} />
       <Board title="Brick wall" unit="clean sheets" rows={b.cleanSheets} value={(m) => m.cleanSheets} />
       <Board title="MVP" unit="avg rating" rows={b.mvp} value={(m) => m.ratingAve} decimals={1} />
+      <Board title="Match played" unit="matches" rows={b.played} value={(m) => m.gamesPlayed} />
     </div>
   );
 }

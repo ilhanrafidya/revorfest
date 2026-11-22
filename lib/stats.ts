@@ -125,6 +125,7 @@ export async function leaderboards() {
     goals: top((m) => m.goals),
     assists: top((m) => m.assists),
     cleanSheets: top((m) => m.cleanSheets),
+    played: top((m) => m.gamesPlayed),
     mvp: top((m) => m.ratingAve + m.motm * 0.01, 5),
   };
 }
@@ -154,6 +155,7 @@ export async function seasonBoards(table: WeeklyLine[]) {
     goals: top((m) => m.goals),
     assists: top((m) => m.assists),
     cleanSheets: top((m) => m.cleanSheets),
+    played: top((m) => m.gamesPlayed),
     mvp: top((m) => m.ratingAve + m.motm * 0.01, 3),
   };
 }
