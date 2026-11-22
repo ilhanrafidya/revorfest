@@ -169,7 +169,7 @@ export default async function StatsPage() {
       )}
 
       <Reveal className="mt-14">
-        <SectionTitle eyebrow="Live race" title={`This week · ${now.label}`} />
+        <SectionTitle eyebrow="Live race" live title={`This week · ${now.label}`} />
         <RaceTable table={now.table} />
         <p className="mt-4 text-xs leading-relaxed text-mute">
           <span className="font-semibold text-chalk">How it&apos;s calculated:</span> minimum {MIN_MATCHES} matches in the week
@@ -245,10 +245,18 @@ function SyncChip({ sync }: { sync: Awaited<ReturnType<typeof lastSync>> }) {
   );
 }
 
-function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+function SectionTitle({ eyebrow, title, live = false }: { eyebrow: string; title: string; live?: boolean }) {
   return (
     <div className="mb-5 px-1">
-      <p className="eyebrow">{eyebrow}</p>
+      <p className="eyebrow inline-flex items-center gap-2">
+        {live && (
+          <span className="relative flex size-2" aria-label="Live">
+            <span className="absolute inline-flex size-full rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
+            <span className="relative inline-flex size-2 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" />
+          </span>
+        )}
+        {eyebrow}
+      </p>
       <h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">{title}</h2>
     </div>
   );
