@@ -12,6 +12,7 @@ import { ViewCardButton } from "@/components/view-card-button";
 import { TrophyCabinet } from "@/components/trophy-cabinet";
 import { allAwards, hattricks, milestonesFor } from "@/lib/awards";
 import { weekStart } from "@/lib/honors";
+import { wrappedSeasons } from "@/lib/wrapped";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getPlayerBySlug((await params).slug);
@@ -28,7 +29,14 @@ export default async function PlayerPage({
   const [{ slug }, { welcome }] = await Promise.all([params, searchParams]);
   const [p, me] = await Promise.all([getPlayerBySlug(slug), currentPlayer()]);
   if (!p) notFound();
-  const [ea, recent, awards, tricks] = await Promise.all([memberStats(p.ea_gamertag), recentRatings(p.ea_gamertag), allAwards(), hattricks(p.ea_gamertag)]);
+  const [ea, recent, awards, tricks, wraps] = await Promise.all([
+    memberStats(p.ea_gamertag),
+    recentRatings(p.ea_gamertag),
+    allAwards(),
+    hattricks(p.ea_gamertag),
+    wrappedSeasons(p.ea_gamertag),
+  ]);
+  const wrapList = wraps.filter((w) => w.finished || me?.role === "admin");
   const isMe = me?.id === p.id;
   const joined = new Date(p.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 
@@ -106,6 +114,28 @@ export default async function PlayerPage({
       <Reveal className="relative mt-12">
         <TrophyCabinet slug={p.slug} name={p.display_name} awards={awards.get(p.id) ?? null} hattricks={tricks.filter((h) => new Date(h.playedAt) >= weekStart())} milestones={milestonesFor(ea)} />
       </Reveal>
+
+      {wrapList.length > 0 && (
+        <Reveal className="relative mt-10">
+          <p className="eyebrow mb-3">Wrapped</p>
+          <div className="flex flex-wrap gap-2">
+            {wrapList.map((w) => (
+              <Link
+                key={w.n}
+                href={`/wrapped/${w.n}/${p.slug}`}
+                className="gold-sheen group flex items-center gap-3 rounded-2xl bg-[linear-gradient(120deg,rgba(215,255,58,0.16),rgba(221,177,104,0.12))] px-4 py-3 ring-1 ring-white/10 transition active:scale-[0.98]"
+              >
+                <span className="text-xl">🎁</span>
+                <span>
+                  <span className="block text-sm font-semibold">{w.name} Wrapped</span>
+                  <span className="block text-xs text-mute">{w.finished ? `${w.matches} matches` : "Preview · season still running"}</span>
+                </span>
+                <span className="text-mute transition group-hover:translate-x-0.5">›</span>
+              </Link>
+            ))}
+          </div>
+        </Reveal>
+      )}
 
       {recent.length > 0 && (
         <Reveal className="relative mt-10">

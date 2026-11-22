@@ -177,5 +177,26 @@ export async function announcePending() {
     }
     out.push(`season-${season.n}`);
   }
+
+  // Season Wrapped — personal, only for members who played that season.
+  if (season && (await claim("announced_wrapped", String(season.n))) === "claimed") {
+    const played = (await db()`
+      SELECT DISTINCT p.id, p.slug, p.display_name FROM players p
+      JOIN ea_match_players mp ON lower(mp.gamertag) = lower(p.ea_gamertag)
+      JOIN ea_matches m USING (match_id)
+      WHERE p.active AND m.played_at >= ${season.start.toISOString()} AND m.played_at < ${season.end.toISOString()}`) as {
+      id: string;
+      slug: string;
+      display_name: string;
+    }[];
+    const who = new Map(played.map((p) => [p.id, p]));
+    await notify((pid) => {
+      const p = who.get(pid);
+      return p
+        ? { title: `🎁 Your ${season.name} Wrapped is ready`, body: `${p.display_name}, your season in one story. Tap to open.`, url: `/wrapped/${season.n}/${p.slug}`, tag: `wrapped-${season.n}` }
+        : null;
+    });
+    out.push(`wrapped-${season.n}`);
+  }
   return out;
 }
