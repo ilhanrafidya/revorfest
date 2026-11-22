@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal, Ticker } from "@/components/motion-primitives";
+import { BoardTabs } from "@/components/board-tabs";
 import { PlayerAvatar } from "@/components/player-avatar";
 import { ShareButton } from "@/components/share-button";
 import { ResultPill, WhoLink } from "@/components/stat-bits";
 import { MIN_MATCHES, honorsFor, weekStart, type WeeklyLine } from "@/lib/honors";
 import { MATCH_TYPE_LABEL, matchDate, timeAgo } from "@/lib/format";
-import { lastSync, leaderboards, recentMatches, type BoardEntry } from "@/lib/stats";
+import { lastSync, leaderboards, recentMatches, seasonBoards, type BoardEntry } from "@/lib/stats";
 import { rangeTable } from "@/lib/honors";
 import { finishedSeasons, seasonAt } from "@/lib/seasons";
 import { Countdown } from "@/components/countdown";
@@ -34,6 +35,7 @@ export default async function StatsPage() {
                           FROM ea_matches WHERE played_at >= ${lastWeek.toISOString()} AND played_at < ${thisWeek.toISOString()}`) as {
     w: number; d: number; l: number; gf: number; ga: number;
   }[];
+  const seasonBoard = await seasonBoards(seasonTable);
   const lastWinners = lastSeason ? seasonWinners(lastTable) : null;
   const race = seasonWinners(seasonTable);
   const seasonEnds = season.end.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Asia/Jakarta" });
@@ -179,17 +181,28 @@ export default async function StatsPage() {
 
       {/* Leaderboards */}
       <Reveal className="mt-16">
-        <SectionTitle eyebrow="Leaderboards" title="Club career (EA)" />
-        {boards.all.length === 0 ? (
-          <Empty>Leaderboards appear after the first successful EA sync.</Empty>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4">
-            <Board title="Top Scorer" unit="goals" rows={boards.goals} value={(m) => m.goals} />
-            <Board title="Top Assist" unit="assists" rows={boards.assists} value={(m) => m.assists} />
-            <Board title="Brick wall" unit="clean sheets" rows={boards.cleanSheets} value={(m) => m.cleanSheets} />
-            <Board title="MVP" unit="avg rating" rows={boards.mvp} value={(m) => m.ratingAve} decimals={1} />
-          </div>
-        )}
+        <SectionTitle eyebrow="Leaderboards" title="Who leads the club" />
+        <BoardTabs
+          tabs={[
+            {
+              key: "season",
+              label: season.name,
+              note: `Matches synced this season · ends ${seasonEnds}`,
+              content:
+                seasonBoard.all.length === 0 ? (
+                  <Empty>No synced matches this season yet.</Empty>
+                ) : (
+                  <Boards b={seasonBoard} />
+                ),
+            },
+            {
+              key: "career",
+              label: "Club career",
+              note: "All-time totals straight from EA",
+              content: boards.all.length === 0 ? <Empty>Leaderboards appear after the first successful EA sync.</Empty> : <Boards b={boards} />,
+            },
+          ]}
+        />
       </Reveal>
 
       {/* Matches */}
@@ -332,6 +345,17 @@ function RaceTable({ table }: { table: WeeklyLine[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function Boards({ b }: { b: Awaited<ReturnType<typeof leaderboards>> }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-4">
+      <Board title="Top Scorer" unit="goals" rows={b.goals} value={(m) => m.goals} />
+      <Board title="Top Assist" unit="assists" rows={b.assists} value={(m) => m.assists} />
+      <Board title="Brick wall" unit="clean sheets" rows={b.cleanSheets} value={(m) => m.cleanSheets} />
+      <Board title="MVP" unit="avg rating" rows={b.mvp} value={(m) => m.ratingAve} decimals={1} />
     </div>
   );
 }

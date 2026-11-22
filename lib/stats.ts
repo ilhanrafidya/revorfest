@@ -1,4 +1,5 @@
 import "server-only";
+import type { WeeklyLine } from "./honors";
 import { db, ensureSchema } from "./db";
 import { parseMembers, parseOverall, type ClubOverall, type MemberStat } from "./ea";
 import { avatarUrl } from "./players";
@@ -125,6 +126,35 @@ export async function leaderboards() {
     assists: top((m) => m.assists),
     cleanSheets: top((m) => m.cleanSheets),
     mvp: top((m) => m.ratingAve + m.motm * 0.01, 5),
+  };
+}
+
+/** Same four boards, but only for matches stored for one EA season (our own archive). */
+export async function seasonBoards(table: WeeklyLine[]) {
+  const index = await rosterIndex();
+  const list: BoardEntry[] = table.map((l) => ({
+    name: l.gamertag,
+    gamesPlayed: l.matches,
+    goals: l.goals,
+    assists: l.assists,
+    ratingAve: l.avgRating,
+    motm: l.motm,
+    cleanSheets: l.cleanSheets,
+    position: null,
+    winRate: null,
+    who: link(index, l.gamertag),
+  }));
+  const top = (key: (m: BoardEntry) => number, min = 0) =>
+    list
+      .filter((m) => m.gamesPlayed >= min && key(m) > 0)
+      .sort((a, b) => key(b) - key(a) || a.gamesPlayed - b.gamesPlayed)
+      .slice(0, 5);
+  return {
+    all: list,
+    goals: top((m) => m.goals),
+    assists: top((m) => m.assists),
+    cleanSheets: top((m) => m.cleanSheets),
+    mvp: top((m) => m.ratingAve + m.motm * 0.01, 3),
   };
 }
 
