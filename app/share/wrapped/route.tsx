@@ -57,7 +57,7 @@ export async function GET(req: Request) {
     case "nickname":
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             <Hero avatar={me} name={w.player.name} gamertag={w.player.gamertag} number={w.player.number} size={400} ring={arch.color} tint={hexA(arch.color, 0.5)} marginTop={80} />
             {line("THIS SEASON I WAS", 30, C.mute, 60)}
             <div style={{ display: "flex", marginTop: 12, fontSize: 120, fontWeight: 800, letterSpacing: -4, color: arch.color }}>{arch.title}</div>
@@ -67,7 +67,7 @@ export async function GET(req: Request) {
                 <Stat key={s.label} label={s.label.toUpperCase()} value={s.value} width={300} />
               ))}
             </div>
-          </>,
+          </div>,
           arch.color,
           hexA(arch.color, 0.2),
         ),
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       if (!w.partner) return new Response("No partner", { status: 404 });
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             {line("PARTNER IN CRIME", 34, C.chalk, 90)}
             <div style={{ display: "flex", marginTop: 70, alignItems: "center" }}>
               <Face src={me} name={w.player.name} size={360} ring={C.volt} />
@@ -88,13 +88,13 @@ export async function GET(req: Request) {
             <div style={{ display: "flex", marginTop: 60 }}>{big(`${Math.round(w.partner.rate * 100)}%`, C.volt, 240)}</div>
             {line("WIN RATE TOGETHER", 30, C.mute, 10)}
             {line(`${w.partner.wins} wins from ${w.partner.together} matches side by side`, 38, C.chalk, 40)}
-          </>,
+          </div>,
         ),
       );
     case "goals":
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             <Hero avatar={me} name={w.player.name} gamertag={w.player.gamertag} number={w.player.number} size={340} ring={C.volt} tint="rgba(215,255,58,0.38)" marginTop={70} />
             <div style={{ display: "flex", marginTop: 70, alignItems: "flex-end", gap: 70 }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -108,14 +108,14 @@ export async function GET(req: Request) {
             </div>
             {line(`${((w.goals + w.assists) / w.matches).toFixed(1)} goal involvements per match`, 38, C.chalk, 60)}
             {line(`#${w.rank.goals} in goals · #${w.rank.assists} in assists · ${w.matches} MP`, 34)}
-          </>,
+          </div>,
         ),
       );
     case "best":
       if (!w.best) return new Response("No best match", { status: 404 });
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             {line("MY BEST NIGHT", 34, C.chalk, 90)}
             <div style={{ display: "flex", marginTop: 40 }}>{big(w.best.rating.toFixed(1), C.gold, 300)}</div>
             {line("MATCH RATING", 30, C.mute, 6)}
@@ -129,7 +129,7 @@ export async function GET(req: Request) {
               <Face src={me} name={w.player.name} size={110} ring={C.gold} />
               <div style={{ display: "flex", fontSize: 50, fontWeight: 800 }}>{w.player.name}</div>
             </div>
-          </>,
+          </div>,
           C.gold,
           "rgba(221,177,104,0.2)",
         ),
@@ -138,7 +138,7 @@ export async function GET(req: Request) {
       if (!w.victim) return new Response("No victim", { status: 404 });
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             {line("MY FAVOURITE VICTIM", 34, C.chalk, 110)}
             <div style={{ display: "flex", marginTop: 60, fontSize: 110, fontWeight: 800, letterSpacing: -3, color: C.red, textAlign: "center", lineHeight: 1.05, maxWidth: 940 }}>
               {w.victim.opponent.slice(0, 24)}
@@ -158,7 +158,7 @@ export async function GET(req: Request) {
               <Face src={me} name={w.player.name} size={110} ring={C.red} />
               <div style={{ display: "flex", fontSize: 50, fontWeight: 800 }}>{w.player.name}</div>
             </div>
-          </>,
+          </div>,
           C.red,
           "rgba(255,69,58,0.18)",
         ),
@@ -166,7 +166,7 @@ export async function GET(req: Request) {
     case "club":
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             {line(`REVORFEST'S ${w.season.name.toUpperCase()}`, 34, C.chalk, 80)}
             <div style={{ display: "flex", marginTop: 50 }}>
               <Stat label="WINS" value={String(w.club.record.W)} color={C.volt} />
@@ -188,13 +188,13 @@ export async function GET(req: Request) {
                 </div>
               ))}
             </div>
-          </>,
+          </div>,
         ),
       );
     default:
       return story(
         frame(
-          <>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", flex: 1 }}>
             <Hero avatar={me} name={w.player.name} gamertag={w.player.gamertag} number={w.player.number} size={320} ring={arch.color} tint={hexA(arch.color, 0.45)} marginTop={60} nameSize={110} />
             <div style={{ display: "flex", marginTop: 26, fontSize: 52, fontWeight: 800, color: arch.color }}>{arch.title}</div>
             <div style={{ display: "flex", flexWrap: "wrap", width: 920, marginTop: 50, justifyContent: "space-between" }}>
@@ -217,7 +217,7 @@ export async function GET(req: Request) {
               {w.partner && line(`Partner in crime: ${w.partner.name}`, 32, C.chalk, 10)}
               {w.victim && line(`Favourite victim: ${w.victim.opponent.slice(0, 22)}`, 32, C.chalk, 10)}
             </div>
-          </>,
+          </div>,
           arch.color,
           hexA(arch.color, 0.2),
         ),
