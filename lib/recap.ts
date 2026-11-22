@@ -53,8 +53,13 @@ export function recapWindow(md: { scheduled_at: string; ended_at?: string | null
 
 /** Everything played during one matchday session, with fair (shrunk) awards. */
 export async function matchdayRecap(md: { scheduled_at: string; ended_at?: string | null }): Promise<Recap> {
-  await ensureSchema();
   const { start, end, closed } = recapWindow(md);
+  return rangeRecap(start, end, closed);
+}
+
+/** Same recap for any time range (inclusive end), e.g. a whole week. */
+export async function rangeRecap(start: Date, end: Date, closed = true): Promise<Recap> {
+  await ensureSchema();
   const sql = db();
   const [matches, rows] = (await Promise.all([
     sql`SELECT match_id, played_at, goals_for, goals_against, result, opponent_name FROM ea_matches
