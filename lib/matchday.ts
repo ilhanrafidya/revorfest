@@ -83,7 +83,13 @@ export async function matchdayRoster(matchdayId: string) {
   return { roster, lineup };
 }
 
+/** Any logged-in member can run a matchday (schedule, lineup, attendance, full time). */
 export function canManage(role: string | undefined) {
+  return !!role;
+}
+
+/** Captains and admins can also delete anyone's matchday; everyone else only their own. */
+export function canModerate(role: string | undefined) {
   return role === "admin" || role === "captain";
 }
 
@@ -123,6 +129,7 @@ export async function latestMatchdayAlert(): Promise<MatchdayAlert | null> {
 
 export type PastMatchday = {
   id: string;
+  created_by: string | null;
   scheduled_at: string;
   ended_at: string | null;
   formation: string;
@@ -138,7 +145,7 @@ export async function pastMatchdays(limit = 30): Promise<PastMatchday[]> {
   await ensureSchema();
   const sql = db();
   const rows = (await sql`
-    SELECT m.id, m.scheduled_at, m.ended_at, m.formation, m.kit, m.note, c.display_name AS by,
+    SELECT m.id, m.scheduled_at, m.ended_at, m.formation, m.kit, m.note, m.created_by, c.display_name AS by,
            (SELECT count(*)::int FROM matchday_attendance a WHERE a.matchday_id = m.id AND a.status = 'ready') AS ready
     FROM matchdays m LEFT JOIN players c ON c.id = m.created_by
     WHERE m.status = 'done'

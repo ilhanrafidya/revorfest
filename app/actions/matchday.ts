@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { notifyMatchday } from "@/lib/push";
 import { db, ensureSchema } from "@/lib/db";
 import { currentPlayer } from "@/lib/session";
-import { canManage } from "@/lib/matchday";
+import { canManage, canModerate } from "@/lib/matchday";
 import { isFormation } from "@/lib/formations";
 import { isKit } from "@/lib/kits";
 
@@ -106,7 +106,11 @@ export async function clearLineup(matchdayId: string): Promise<Result> {
 
 /** Permanently removes a finished matchday (lineup + attendance cascade). */
 export async function deleteMatchday(id: string): Promise<Result> {
-  if (!(await manager())) return { ok: false, error: "Only captains and admins can delete matchdays." };
-  await db()`DELETE FROM matchdays WHERE id = ${id} AND status = 'done'`;
+  const me = await manager();
+  if (!me) return { ok: false, error: "Not allowed." };
+  const gone = canModerate(me.role)
+    ? await db()`DELETE FROM matchdays WHERE id = ${id} AND status = 'done' RETURNING id`
+    : await db()`DELETE FROM matchdays WHERE id = ${id} AND status = 'done' AND created_by = ${me.id} RETURNING id`;
+  if (!(gone as unknown[]).length) return { ok: false, error: "Only whoever made it (or a captain) can delete this matchday." };
   return done();
 }

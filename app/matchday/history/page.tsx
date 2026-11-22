@@ -5,7 +5,7 @@ import { Reveal } from "@/components/motion-primitives";
 import { ShareButton } from "@/components/share-button";
 import { formationSlots } from "@/lib/formations";
 import { KITS } from "@/lib/kits";
-import { canManage, pastMatchdays } from "@/lib/matchday";
+import { canModerate, pastMatchdays } from "@/lib/matchday";
 import { currentPlayer } from "@/lib/session";
 import { DeleteMatchday } from "@/components/delete-matchday";
 import { matchdayRecap, type Recap } from "@/lib/recap";
@@ -135,7 +135,7 @@ function parts(iso: string) {
 export default async function MatchdayHistory() {
   const [list, me] = await Promise.all([pastMatchdays(), currentPlayer()]);
   const recaps = await Promise.all(list.map((md) => matchdayRecap(md).catch(() => null)));
-  const manage = canManage(me?.role);
+  const moderator = canModerate(me?.role);
   return (
     <section className="mx-auto max-w-4xl px-4 pb-40 pt-24 md:px-6 md:pt-32">
       <Reveal blur className="px-1 pb-10">
@@ -158,7 +158,7 @@ export default async function MatchdayHistory() {
             return (
               <Reveal key={md.id} delay={Math.min(i * 0.04, 0.3)}>
                 <li className="tile relative p-5 md:p-6">
-                 {manage && (
+                 {me && (moderator || md.created_by === me.id) && (
                    <div className="absolute right-4 top-4 z-10">
                      <DeleteMatchday id={md.id} />
                    </div>

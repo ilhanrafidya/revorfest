@@ -37,7 +37,7 @@ export default async function MatchdayPage() {
         <div className="tile p-8 text-center">
           <p className="text-xl font-semibold">No matchday scheduled.</p>
           <p className="mt-2 text-mute">
-            {manage ? "Set one up below." : me ? "Your captain hasn't scheduled the next session yet." : "Log in to see who's playing."}
+            {manage ? "Set one up below." : "Log in to see who's playing."}
           </p>
           {!me && (
             <Link href="/login" className="mt-5 inline-block rounded-full bg-accent px-5 py-3 text-sm font-semibold text-on-accent">
