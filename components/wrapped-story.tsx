@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, animate, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ARCHETYPES, type Mate, type Wrapped } from "@/lib/wrapped-meta";
 import { ShareButton } from "./share-button";
 
@@ -523,8 +524,12 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
 
   const s = slides[i];
   const downAt = useRef(0);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <div className="fixed inset-0 z-[80] bg-black" />;
 
-  return (
+  // portalled to <body>: page-transition wrappers use transforms, which would break position:fixed
+  return createPortal(
     <div className="fixed inset-0 z-[80] overflow-hidden bg-black text-chalk">
       {/* living background */}
       <m.div
@@ -606,6 +611,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
