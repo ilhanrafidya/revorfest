@@ -6,7 +6,7 @@ import { TrophyShelf, type Shelf } from "./trophy-shelf";
 export type Item = {
   group: string;
   key: string;
-  tone: "gold" | "goldSolid" | "red" | "volt" | "blue";
+  tone: "gold" | "goldSolid" | "red" | "volt" | "blue" | "sky";
   icon: string;
   title: string;
   sub: string;
@@ -21,6 +21,7 @@ const TONE: Tone = {
   red: { box: "ring-1 ring-depleted/25", icon: "bg-depleted/15 text-[#FF6B61]", btn: "bg-depleted/15 text-[#FF6B61]" },
   volt: { box: "ring-1 ring-accent/25", icon: "bg-accent/15 text-accent", btn: "bg-accent/15 text-accent" },
   blue: { box: "ring-1 ring-white/10", icon: "bg-white/10 text-chalk", btn: "bg-white/[0.08] text-chalk" },
+  sky: { box: "ring-1 ring-[#8AB4FF]/30", icon: "bg-[#8AB4FF]/15 text-[#8AB4FF]", btn: "bg-[#8AB4FF]/15 text-[#8AB4FF]" },
 };
 
 const SEASON = {
@@ -73,7 +74,7 @@ export function TrophyCabinet({
     items.push({
       group: "maestro",
       key: `ma-${m.matchId}`,
-      tone: "blue",
+      tone: "sky",
       icon: "assist",
       title: m.assists >= 5 ? "Assist machine" : m.assists === 4 ? "Grand Maestro" : "Maestro",
       sub: `${m.assists} assists vs ${m.opponent} · ${m.gf}–${m.ga}`,
