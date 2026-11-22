@@ -12,14 +12,13 @@ export async function generateMetadata({ params }: { params: Promise<{ season: s
   return { title: `Season ${season} Wrapped` };
 }
 
-export default async function WrappedPage({ params, searchParams }: { params: Promise<{ season: string; slug: string }>; searchParams: Promise<{ qa?: string }> }) {
+export default async function WrappedPage({ params }: { params: Promise<{ season: string; slug: string }> }) {
   const { season, slug } = await params;
-  const qa = (await searchParams).qa === "wq83z";
   const n = Number(season);
   const ws = wrappedSeason(n);
   const p = await getPlayerBySlug(slug);
   if (!ws || !p) notFound();
-  if (!ws.finished && !qa) {
+  if (!ws.finished) {
     // the running season is a private preview for admins until it ends
     const me = await currentPlayer();
     if (me?.role !== "admin") notFound();
