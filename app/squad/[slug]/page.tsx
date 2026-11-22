@@ -13,6 +13,7 @@ import { TrophyCabinet } from "@/components/trophy-cabinet";
 import { allAwards, hattricks, maestros, milestonesFor } from "@/lib/awards";
 import { weekStart } from "@/lib/honors";
 import { wrappedSeasons } from "@/lib/wrapped";
+import { WrappedBadge } from "@/components/wrapped-badge";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getPlayerBySlug((await params).slug);
@@ -119,19 +120,19 @@ export default async function PlayerPage({
       {wrapList.length > 0 && (
         <Reveal className="relative mt-10">
           <p className="eyebrow mb-3">Wrapped</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {wrapList.map((w) => (
               <Link
                 key={w.n}
                 href={`/wrapped/${w.n}/${p.slug}`}
-                className="gold-sheen group flex items-center gap-3 rounded-2xl bg-[linear-gradient(120deg,rgba(215,255,58,0.16),rgba(221,177,104,0.12))] px-4 py-3 ring-1 ring-white/10 transition active:scale-[0.98]"
+                className="gold-sheen group tile flex items-center gap-4 p-4 transition active:scale-[0.99]"
               >
-                <span className="text-xl">🎁</span>
-                <span>
-                  <span className="block text-sm font-semibold">{w.name} Wrapped</span>
-                  <span className="block text-xs text-mute">{w.finished ? `${w.matches} matches` : "Preview · season still running"}</span>
+                <WrappedBadge n={w.n} />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{w.name} Wrapped</span>
+                  <span className="block text-xs text-mute">{w.finished ? `${w.matches} matches · your season in one story` : "Admin preview · opens for everyone when the season ends"}</span>
                 </span>
-                <span className="text-mute transition group-hover:translate-x-0.5">›</span>
+                <span className="text-lg text-mute transition group-hover:translate-x-0.5">›</span>
               </Link>
             ))}
           </div>

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { WrappedBadge } from "./wrapped-badge";
+import { TrophyIcon } from "./icons";
 import { db } from "@/lib/db";
 import { currentPlayer } from "@/lib/session";
 import { finishedSeasons } from "@/lib/seasons";
@@ -21,7 +23,7 @@ export async function WrappedBanner() {
         className="gold-sheen group relative flex items-center gap-4 overflow-hidden rounded-[28px] p-5 ring-1 ring-white/10 transition active:scale-[0.99] md:p-6"
         style={{ background: "linear-gradient(120deg, rgba(215,255,58,0.22), rgba(221,177,104,0.16) 45%, rgba(138,180,255,0.14))" }}
       >
-        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-black/30 text-3xl">🎁</span>
+        <WrappedBadge n={s.n} />
         <span className="min-w-0 flex-1">
           <span className="eyebrow block text-accent">Just dropped</span>
           <span className="block text-xl font-semibold tracking-tight md:text-2xl">Your {s.name} Wrapped is ready</span>
@@ -30,7 +32,7 @@ export async function WrappedBanner() {
         <span className="text-2xl text-white/70 transition group-hover:translate-x-1">›</span>
       </Link>
       <Link href={`/awards/${s.n}`} className="flex items-center gap-3 rounded-2xl bg-gold/10 px-4 py-3 text-sm ring-1 ring-gold/25 transition active:scale-[0.99]">
-        <span>🏆</span>
+        <TrophyIcon className="size-5 text-gold" />
         <span className="min-w-0 flex-1 font-semibold">{s.name} Awards Night is live</span>
         <span className="text-mute">›</span>
       </Link>

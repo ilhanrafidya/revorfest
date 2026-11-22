@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { currentPlayer } from "@/lib/session";
+import { TrophyIcon } from "@/components/icons";
 import { Reveal, Ticker } from "@/components/motion-primitives";
 import { BoardTabs } from "@/components/board-tabs";
 import { PlayerAvatar } from "@/components/player-avatar";
@@ -112,7 +113,7 @@ export default async function StatsPage() {
         <SectionTitle eyebrow={`EA ${season.name}`} title={`Season race · ends ${seasonEnds}`} />
         {me?.role === "admin" && (
           <Link href={`/awards/${season.n}`} className="mb-4 -mt-2 inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs text-mute transition hover:text-chalk">
-            🏆 Preview Awards Night (admin only)
+            <TrophyIcon className="size-4 text-gold" /> Preview Awards Night (admin only)
           </Link>
         )}
         <div className="grid gap-3 md:grid-cols-3 md:gap-4">
@@ -149,7 +150,7 @@ export default async function StatsPage() {
             href={`/awards/${lastSeason.n}`}
             className="gold-sheen mb-4 flex items-center gap-4 rounded-[24px] bg-[linear-gradient(120deg,rgba(221,177,104,0.22),rgba(221,177,104,0.06))] p-4 ring-1 ring-gold/30 transition active:scale-[0.99]"
           >
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-black/30 text-2xl">🏆</span>
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gold/20 text-gold"><TrophyIcon className="size-6" /></span>
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">Watch the {lastSeason.name} Awards Night</span>
               <span className="block text-xs text-mute">Six awards, revealed one by one</span>

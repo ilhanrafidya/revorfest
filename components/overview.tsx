@@ -1,6 +1,6 @@
 import { FormStrip, Reveal, Ticker, TiltCard, WinRing } from "./motion-primitives";
 import { CurrentKitChip } from "./kit-showcase";
-import { PlayFilled } from "./icons";
+import { PlayFilled, TrophyIcon } from "./icons";
 import { HomeClipTile } from "./home-clip-tile";
 import { club as demo, gotw, nextMatchday, potw as demoPotw, topAssist as demoAssist, topScorer as demoScorer, wpotw as demoWpotw } from "@/lib/mock";
 import { PlayerAvatar } from "./player-avatar";
@@ -505,7 +505,7 @@ export async function Overview() {
                   href={`/awards/${club.countdown.recent.n}`}
                   className="gold-sheen flex items-center justify-between rounded-2xl bg-gold/15 px-4 py-3 text-sm font-semibold ring-1 ring-gold/30"
                 >
-                  🏆 {club.countdown.recent.name} Awards Night
+                  <span className="flex items-center gap-2"><TrophyIcon className="size-4 text-gold" />{club.countdown.recent.name} Awards Night</span>
                   <span className="text-mute">›</span>
                 </Link>
               )}
