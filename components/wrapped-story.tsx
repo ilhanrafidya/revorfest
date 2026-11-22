@@ -59,9 +59,9 @@ function Kicker({ children, color = "rgba(255,255,255,0.6)" }: { children: React
   );
 }
 
-function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)" }: { who: Mate; size?: number; ring?: string }) {
+function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)", solid = false }: { who: Mate; size?: number; ring?: string; solid?: boolean }) {
   return (
-    <span className="grid shrink-0 place-items-center overflow-hidden rounded-full bg-white/10 font-bold" style={{ width: size, height: size, boxShadow: `0 0 0 3px ${ring}`, fontSize: size / 3 }}>
+    <span className={`grid shrink-0 place-items-center overflow-hidden rounded-full font-bold ${solid ? "bg-[#1c1c1f]" : "bg-white/10"}`} style={{ width: size, height: size, boxShadow: `0 0 0 3px ${ring}`, fontSize: size / 3 }}>
       {who.avatar ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={who.avatar} alt="" className="size-full object-cover" />
@@ -75,21 +75,21 @@ function Face({ who, size = 96, ring = "rgba(255,255,255,0.25)" }: { who: Mate; 
 /** Portrait with the shirt number huge behind it — same look as the share cards. */
 function Portrait({ who, color, size = 170 }: { who: Mate; color: string; size?: number }) {
   return (
-    <div className="relative grid place-items-center" style={{ height: size * 1.25 }}>
+    <div className="relative grid w-full place-items-center overflow-hidden" style={{ height: size * 1.3 }}>
       {who.number != null && (
         <m.span
           aria-hidden
-          className="text-display pointer-events-none absolute select-none leading-none"
-          style={{ fontSize: size * 1.45, letterSpacing: "-0.06em", backgroundImage: `linear-gradient(180deg, ${color}aa, transparent 75%)`, WebkitBackgroundClip: "text", color: "transparent" }}
-          initial={{ opacity: 0, y: 30 }}
+          className="text-display pointer-events-none absolute inset-x-0 top-0 select-none text-center leading-[0.8]"
+          style={{ fontSize: size * 1.15, letterSpacing: "-0.06em", backgroundImage: `linear-gradient(180deg, ${color}99, transparent 70%)`, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.1, ease: EASE }}
         >
           {who.number}
         </m.span>
       )}
-      <m.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}>
-        <Face who={who} size={size} ring={color} />
+      <m.span className="relative" initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}>
+        <Face who={who} size={size} ring={color} solid />
       </m.span>
     </div>
   );
@@ -116,23 +116,45 @@ function Confetti() {
   );
 }
 
-/** Ball grid: one ball per goal (or assist), dropping in like rain. */
-function BallGrid({ n, color, delay = 0.3 }: { n: number; color: string; delay?: number }) {
+function BallIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <circle cx="12" cy="12" r="10.5" fill="#F5F5F7" />
+      <path d="M12 7.2l3.6 2.6-1.4 4.3H9.8L8.4 9.8z" fill="#0b0b0b" />
+      <path d="M12 1.5v5.7M15.6 9.8l5.4-1.8M14.2 14.1l3.3 4.6M9.8 14.1l-3.3 4.6M8.4 9.8L3 8" stroke="#0b0b0b" strokeWidth="1.3" fill="none" />
+      <circle cx="12" cy="12" r="10.5" fill="none" stroke="#0b0b0b" strokeOpacity=".25" />
+    </svg>
+  );
+}
+
+function BootIcon({ className = "", color = "#8AB4FF" }: { className?: string; color?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path d="M4 5.5h5.2l.9 4.2c2.6.9 6.4 1.6 9.1 2.6 1.4.5 2.3 1.6 2.3 3v1.2c0 .8-.6 1.4-1.4 1.4H4.6A1.6 1.6 0 0 1 3 16.3V6.5a1 1 0 0 1 1-1z" fill={color} />
+      <path d="M5.5 19.6h1.6M10 19.6h1.6M14.5 19.6h1.6" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M10.4 11.4l1.2-1M12.6 12l1.2-1" stroke="#0b0b0b" strokeOpacity=".45" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** One icon per goal (ball) or assist (boot), popping in softly row by row. */
+function TallyGrid({ n, kind, delay = 0.3 }: { n: number; kind: "goal" | "assist"; delay?: number }) {
   const show = Math.min(n, 60);
-  const step = Math.min(0.05, 1.4 / Math.max(show, 1));
+  const step = Math.min(0.045, 1.6 / Math.max(show, 1));
   return (
     <div className="flex flex-wrap gap-1.5">
       {Array.from({ length: show }, (_, i) => (
         <m.span
           key={i}
-          className="block size-3.5 rounded-full"
-          style={{ background: color, boxShadow: `0 0 10px ${color}66` }}
-          initial={{ opacity: 0, y: -40, scale: 0.4 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: "spring", stiffness: 420, damping: 18, delay: delay + i * step }}
-        />
+          className="block"
+          initial={{ opacity: 0, scale: 0.3, filter: "blur(4px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          transition={{ duration: 0.45, ease: EASE, delay: delay + i * step }}
+        >
+          {kind === "goal" ? <BallIcon className="size-[18px]" /> : <BootIcon className="size-[18px]" />}
+        </m.span>
       ))}
-      {n > show && <span className="text-xs text-white/60">+{n - show}</span>}
+      {n > show && <span className="self-center text-xs text-white/60">+{n - show}</span>}
     </div>
   );
 }
@@ -293,7 +315,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
             </span>
           </In>
           <div className="mt-4">
-            <BallGrid n={w.goals} color="#D7FF3A" />
+            <TallyGrid n={w.goals} kind="goal" />
           </div>
           <div className="mt-8 flex items-end gap-3">
             <Kicker color="#8AB4FF">Assists</Kicker>
@@ -302,7 +324,7 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
             </span>
           </div>
           <div className="mt-3">
-            <BallGrid n={w.assists} color="#8AB4FF" delay={1.4} />
+            <TallyGrid n={w.assists} kind="assist" delay={1.4} />
           </div>
           <In d={2} className="mt-6 text-sm text-white/70">
             {((w.goals + w.assists) / w.matches).toFixed(1)} goal involvements a match · {ordinal(w.rank.goals)} in goals, {ordinal(w.rank.assists)} in assists
