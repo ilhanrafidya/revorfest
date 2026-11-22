@@ -97,6 +97,17 @@ function Portrait({ who, color, size = 170 }: { who: Mate; color: string; size?:
   );
 }
 
+/** Ticket tear line with round notches cut into both edges. */
+function Perforation() {
+  return (
+    <div className="relative h-0">
+      <span className="absolute inset-x-6 top-0 border-t border-dashed border-gold/40" />
+      <span className="absolute -left-3 -top-3 size-6 rounded-full bg-black" />
+      <span className="absolute -right-3 -top-3 size-6 rounded-full bg-black" />
+    </div>
+  );
+}
+
 const CONFETTI = ["#D7FF3A", "#DDB168", "#8AB4FF", "#FF9F43", "#F5F5F7"];
 function Confetti() {
   const reduce = useReducedMotion();
@@ -350,18 +361,22 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
               animate={{ rotateY: 0, opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: EASE, delay: 0.2 }}
             >
-              <div className="flex items-center justify-between border-b border-dashed border-gold/40 px-6 py-4">
+              <div className="flex items-center justify-between px-6 py-4">
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Revorfest · Matchday</span>
                 <span className="text-xs text-white/60">{new Date(w.best.playedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" })}</span>
               </div>
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-6 py-6 text-center">
+              <Perforation />
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-6 text-center">
                 <span className="truncate text-sm font-semibold">Revorfest</span>
-                <span className="text-display text-5xl tabular-nums">
-                  {w.best.gf}–{w.best.ga}
+                <span className="text-display flex items-center gap-3 text-5xl tabular-nums">
+                  <span>{w.best.gf}</span>
+                  <span className="text-3xl text-white/40">–</span>
+                  <span>{w.best.ga}</span>
                 </span>
                 <span className="truncate text-sm font-semibold">{w.best.opponent}</span>
               </div>
-              <div className="flex items-end justify-between border-t border-dashed border-gold/40 px-6 py-5">
+              <Perforation />
+              <div className="flex items-end justify-between px-6 py-5">
                 <div>
                   <p className="text-xs text-white/60">Your rating</p>
                   <p className="text-display text-6xl leading-none text-gold">
@@ -377,8 +392,6 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
                   </p>
                 </div>
               </div>
-              <span className="absolute -left-3 top-[44px] size-6 rounded-full bg-black" />
-              <span className="absolute -right-3 top-[44px] size-6 rounded-full bg-black" />
             </m.div>
           </div>
         ),
@@ -393,30 +406,55 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
         body: (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <m.div
-              className="relative w-full max-w-sm rounded-[18px] bg-[#e9dcc2] px-6 py-7 text-[#2a1a0a] shadow-[0_30px_80px_-20px_rgba(255,69,58,0.45)]"
-              initial={{ rotate: -8, scale: 0.85, opacity: 0 }}
-              animate={{ rotate: -2, scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 160, damping: 14, delay: 0.15 }}
+              className="relative w-full max-w-sm overflow-hidden rounded-[28px] p-[1.5px]"
+              style={{ background: "linear-gradient(140deg, #DDB168, #5a1414 40%, #FF453A 70%, #DDB168)" }}
+              initial={{ y: 40, opacity: 0, scale: 0.94 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}
             >
-              <p className="text-display text-5xl tracking-[0.12em]">WANTED</p>
-              <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.3em] opacity-70">by {first}</p>
-              <p className="text-display mt-5 break-words text-[clamp(28px,9vw,44px)] leading-none">{w.victim.opponent}</p>
-              <p className="mt-4 text-sm font-semibold opacity-80">
-                Record against them: {w.victim.W}W {w.victim.D}D {w.victim.L}L
-              </p>
-              {w.victim.goals > 0 && (
-                <m.div
-                  className="absolute -right-4 -top-4 grid size-24 place-items-center rounded-full border-4 border-[#c0281f] bg-[#e9dcc2] text-[#c0281f]"
-                  initial={{ scale: 2.4, opacity: 0, rotate: 20 }}
-                  animate={{ scale: 1, opacity: 1, rotate: 12 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.9 }}
+              <div className="relative overflow-hidden rounded-[26px] bg-[radial-gradient(120%_90%_at_50%_0%,#3a0a0a,#0b0303_70%)] px-6 pb-7 pt-8">
+                {/* spotlight sweep */}
+                <m.span
+                  aria-hidden
+                  className="pointer-events-none absolute -top-10 h-[140%] w-24 rotate-12 bg-gradient-to-b from-white/20 to-transparent blur-xl"
+                  initial={{ left: "-30%" }}
+                  animate={{ left: "120%" }}
+                  transition={{ duration: 1.8, ease: "easeInOut", delay: 0.6 }}
+                />
+                <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-[#FF6B61]">Most wanted</p>
+                <p className="mt-1 text-[10px] uppercase tracking-[0.3em] text-white/40">Issued by {first} · {w.season.name}</p>
+                <m.p
+                  className="text-display mt-6 break-words text-[clamp(32px,10vw,52px)] leading-[0.95] text-white"
+                  initial={{ letterSpacing: "0.2em", opacity: 0 }}
+                  animate={{ letterSpacing: "-0.02em", opacity: 1 }}
+                  transition={{ duration: 1.1, ease: EASE, delay: 0.4 }}
                 >
-                  <span className="text-center leading-none">
-                    <span className="text-display block text-3xl">{w.victim.goals}</span>
-                    <span className="block text-[10px] font-black tracking-widest">GOALS</span>
-                  </span>
-                </m.div>
-              )}
+                  {w.victim.opponent}
+                </m.p>
+                <div className="mt-7 flex items-end justify-between border-t border-white/10 pt-5">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gold/80">Bounty collected</p>
+                    <p className="text-display mt-1 text-5xl leading-none text-gold">
+                      <CountUp to={w.victim.goals} delay={1} />
+                      <span className="ml-2 text-lg font-semibold text-white/60">goals</span>
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5 text-xs font-bold">
+                    <span className="rounded-full bg-accent/15 px-2.5 py-1 text-accent">{w.victim.W}W</span>
+                    <span className="rounded-full bg-white/10 px-2.5 py-1">{w.victim.D}D</span>
+                    <span className="rounded-full bg-depleted/20 px-2.5 py-1 text-[#FF6B61]">{w.victim.L}L</span>
+                  </div>
+                </div>
+                {/* stamp */}
+                <m.span
+                  className="absolute right-4 top-6 rounded-md border-2 border-[#FF453A]/80 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-[#FF453A]/90"
+                  initial={{ scale: 2.6, opacity: 0, rotate: 0 }}
+                  animate={{ scale: 1, opacity: 1, rotate: -12 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 14, delay: 1.5 }}
+                >
+                  Hunted
+                </m.span>
+              </div>
             </m.div>
             <In d={1.2} className="mt-8 text-white/70">
               Your favourite victim this season.
