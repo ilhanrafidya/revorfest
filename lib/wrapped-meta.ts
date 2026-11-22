@@ -27,7 +27,8 @@ export type Wrapped = {
   record: { W: number; D: number; L: number };
   best: { opponent: string; gf: number; ga: number; rating: number; goals: number; assists: number; playedAt: string } | null;
   victim: { opponent: string; goals: number; W: number; D: number; L: number; played: number } | null;
-  partner: (Mate & { together: number; wins: number; rate: number }) | null;
+  /** most matches together; goals/assists are the two of you combined in those matches */
+  partner: (Mate & { together: number; wins: number; rate: number; goals: number; assists: number }) | null;
   signature: { label: string; value: string; rank: number } | null;
   awards: { potw: number; weak: number; hattricks: number; maestros: number; season: string[] };
   /** YYYY-MM-DD (WIB) of every night played, and the season's first/last day for the calendar */

@@ -452,13 +452,31 @@ export function WrappedStory({ data: w }: { data: Wrapped }) {
               <p className="text-display text-4xl">
                 {first} <span className="text-white/40">+</span> {w.partner.name}
               </p>
+              <p className="mt-2 text-sm text-white/60">{w.partner.together} matches side by side · more than anyone else</p>
             </In>
-            <m.div className="mt-6 rounded-full bg-[#8AB4FF] px-6 py-3 text-black" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 14, delay: 1.3 }}>
-              <span className="text-display text-3xl">{Math.round(w.partner.rate * 100)}%</span>
-              <span className="ml-2 text-sm font-semibold">win rate together</span>
-            </m.div>
-            <In d={1.6} className="mt-4 text-sm text-white/60">
-              {w.partner.wins} wins from {w.partner.together} matches side by side
+            <div className="mt-7 grid w-full grid-cols-3 gap-2">
+              {[
+                { k: "Goals", v: w.partner.goals, c: "#D7FF3A" },
+                { k: "Assists", v: w.partner.assists, c: "#8AB4FF" },
+                { k: "Win rate", v: Math.round(w.partner.rate * 100), c: "#F5F5F7", pct: true },
+              ].map((x, k) => (
+                <m.div
+                  key={x.k}
+                  className="rounded-2xl bg-white/[0.06] px-2 py-4 ring-1 ring-white/10"
+                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 240, damping: 18, delay: 1.3 + k * 0.15 }}
+                >
+                  <p className="text-display text-4xl leading-none" style={{ color: x.c }}>
+                    <CountUp to={x.v} delay={1.4 + k * 0.15} />
+                    {x.pct ? "%" : ""}
+                  </p>
+                  <p className="mt-1 text-[10px] uppercase tracking-widest text-white/55">{x.k}</p>
+                </m.div>
+              ))}
+            </div>
+            <In d={1.9} className="mt-4 text-xs text-white/50">
+              Goals and assists between the two of you, in the matches you played together
             </In>
           </div>
         ),

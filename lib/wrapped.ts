@@ -107,7 +107,8 @@ export async function buildWrapped(seasonN: number, gamertag: string): Promise<W
         FROM ea_match_players mp JOIN ea_matches m USING (match_id)
         WHERE m.played_at >= ${s} AND m.played_at < ${e}
         GROUP BY mp.gamertag`,
-    sql`SELECT o.gamertag, count(*)::int AS together, sum(CASE WHEN m.result = 'W' THEN 1 ELSE 0 END)::int AS wins
+    sql`SELECT o.gamertag, count(*)::int AS together, sum(CASE WHEN m.result = 'W' THEN 1 ELSE 0 END)::int AS wins,
+               (sum(me.goals) + sum(o.goals))::int AS goals, (sum(me.assists) + sum(o.assists))::int AS assists
         FROM ea_match_players me
         JOIN ea_match_players o ON o.match_id = me.match_id AND lower(o.gamertag) <> lower(me.gamertag)
         JOIN ea_matches m ON m.match_id = me.match_id
@@ -116,7 +117,7 @@ export async function buildWrapped(seasonN: number, gamertag: string): Promise<W
     sql`SELECT id, slug, display_name, ea_gamertag, jersey_number, avatar_version, (avatar_b64 IS NOT NULL) AS has_avatar
         FROM players WHERE active`,
     rangeTable(season.start, end),
-  ])) as [Row[], Agg[], { gamertag: string; together: number; wins: number }[], P[], Awaited<ReturnType<typeof rangeTable>>];
+  ])) as [Row[], Agg[], { gamertag: string; together: number; wins: number; goals: number; assists: number }[], P[], Awaited<ReturnType<typeof rangeTable>>];
 
   if (!rows.length) return null;
 
@@ -171,13 +172,11 @@ export async function buildWrapped(seasonN: number, gamertag: string): Promise<W
     .sort((a, b) => b[1].goals - a[1].goals || b[1].W - a[1].W || b[1].played - a[1].played)[0];
   const victim = victimEntry && (victimEntry[1].goals > 0 || victimEntry[1].W > 0) ? { opponent: victimEntry[0], ...victimEntry[1] } : null;
 
-  // partner in crime: best win rate together (min 3 shared matches, more is better on ties)
-  const minTogether = Math.min(5, Math.max(3, Math.floor(n / 4)));
-  const pBest = partners
-    .filter((p) => p.together >= minTogether)
-    .sort((a, b) => b.wins / b.together - a.wins / a.together || b.together - a.together)[0] ??
-    partners.filter((p) => p.together >= 3).sort((a, b) => b.wins / b.together - a.wins / a.together || b.together - a.together)[0];
-  const partner = pBest ? { ...mate(pBest.gamertag), together: pBest.together, wins: pBest.wins, rate: pBest.wins / pBest.together } : null;
+  // partner in crime: the teammate you shared the pitch with the most
+  const pBest = [...partners].sort((a, b) => b.together - a.together || b.wins - a.wins)[0];
+  const partner = pBest
+    ? { ...mate(pBest.gamertag), together: pBest.together, wins: pBest.wins, rate: pBest.wins / pBest.together, goals: pBest.goals, assists: pBest.assists }
+    : null;
 
   // ---- club context ----
   const qualified = aggs.filter((a) => a.matches >= Math.min(3, n));
